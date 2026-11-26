@@ -1,8 +1,8 @@
-/* RepoCloner background service worker — keyboard shortcut → open popup window. */
+/* CloneIt background service worker — keyboard shortcut → open popup window. */
 'use strict';
 
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command !== 'open-repocloner') return;
+  if (command !== 'open-cloneit') return;
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const w = await chrome.windows.create({
     url: chrome.runtime.getURL('popup.html'),

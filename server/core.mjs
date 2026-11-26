@@ -1,10 +1,12 @@
-/* RepoCloner core — shared logic for the server (HTTP) and CLI entry points.
+/* CloneIt core — shared logic for the server (HTTP) and CLI entry points.
  *
  * Zero-dependency Node ≥ 18. Holds: config parsing, git execution (with
  * progress parsing), clone/pull logic, async job queue with history
- * persistence, references tree / registry scanning.
+ * persistence, references tree / registry scanning, collected-link storage
+ * (收藏: record article addresses locally, no crawling yet) and the
+ * clone-website placeholder (处理逻辑留空, planned for later).
  *
- * Both repo-cloner-server.mjs and repo-cloner-cli.mjs import this and add
+ * Both clone-it-server.mjs and clone-it-cli.mjs import this and add
  * their own surface (HTTP routes / command-line).
  */
 'use strict';
@@ -17,12 +19,15 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.3.0';
 export const DEFAULT_PORT = 7420;
 export const ORIGIN_ALLOW = new Set([
   'chrome-extension://',
   'moz-extension://',
 ]);
+
+// Request token header used when --token is set.
+export const TOKEN_HEADER = 'x-cloneit-token';
 
 // ---------- config ----------
 export function parseConfig(argv) {
@@ -244,6 +249,108 @@ export function listCategoryRepos(ws, category) {
     .map((e) => e.name);
 }
 
+// ---------- collected links (收藏: record article addresses locally) ----------
+//
+// 收藏功能: 看到文章后把文章地址记录到本地文件。后端只负责记录地址,
+// 爬取/内容抓取任务先留空(crawlStatus 固定为 "pending"), 后续再实现。
+export function collectedFile(cfg) {
+  return path.join(__dirname, 'collected.json');
+}
+
+export function isHttpUrl(url) {
+  return typeof url === 'string' && /^https?:\/\/\S+$/i.test(url);
+}
+
+export function normalizeUrl(url) {
+  return String(url).trim().replace(/\/+$/, '');
+}
+
+function loadCollected(cfg) {
+  const file = collectedFile(cfg);
+  try {
+    const arr = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCollected(cfg, list) {
+  try { fs.writeFileSync(collectedFile(cfg), JSON.stringify(list, null, 2)); } catch {}
+}
+
+/**
+ * Record an article/page address into the local collected store.
+ * Crawling is intentionally left empty for now — only the address is stored.
+ */
+export function addCollected(cfg, { url, title, note, source }) {
+  if (!isHttpUrl(url)) return { code: 400, error: 'url must be an http(s) address' };
+  const norm = normalizeUrl(url);
+  const list = loadCollected(cfg);
+  if (list.some((c) => c && c.url === norm)) {
+    return { code: 409, error: 'already collected: ' + norm, entry: list.find((c) => c.url === norm) };
+  }
+  const entry = {
+    id: 'col-' + Date.now().toString(36) + '-' + (list.length + 1),
+    url: norm,
+    title: typeof title === 'string' && title.trim() ? title.trim() : null,
+    note: typeof note === 'string' && note.trim() ? note.trim() : null,
+    source: typeof source === 'string' && source.trim() ? source.trim() : null,
+    collectedAt: new Date().toISOString(),
+    crawlStatus: 'pending', // 爬取任务先留空, 计划后续实现
+  };
+  list.unshift(entry);
+  if (list.length > 500) list.length = 500;
+  saveCollected(cfg, list);
+  return { code: 200, entry };
+}
+
+export function listCollected(cfg) {
+  return loadCollected(cfg);
+}
+
+export function removeCollected(cfg, id) {
+  const list = loadCollected(cfg);
+  const idx = list.findIndex((c) => c && c.id === id);
+  if (idx < 0) return { code: 404, error: 'unknown collected id: ' + id };
+  const [removed] = list.splice(idx, 1);
+  saveCollected(cfg, list);
+  return { code: 200, entry: removed };
+}
+
+// ---------- clone-website (clone website: 处理逻辑先留空, 计划后续实现) ----------
+/**
+ * Placeholder for the clone-website feature. The endpoint and job record are
+ * wired up, but the actual website cloning logic is intentionally left empty
+ * for now and will be implemented later. Returns 501 Not Implemented.
+ */
+export function doCloneWebsite(cfg, { workspace, url, name }) {
+  if (!isHttpUrl(url)) return { code: 400, error: 'url must be an http(s) address' };
+  const ws = wsById(cfg.workspaces, workspace);
+  const norm = normalizeUrl(url);
+  const siteName = name && /^[\w.-]+$/.test(name) ? name : safeHostname(norm);
+  return {
+    code: 501,
+    body: {
+      ok: false,
+      notImplemented: true,
+      error: 'clone-website 处理逻辑暂未实现 (计划后续实现)',
+      workspace: ws ? ws.id : null,
+      url: norm,
+      name: siteName,
+      plannedPath: ws ? path.join(ws.dir, 'references', 'websites', siteName) : null,
+    },
+  };
+}
+
+function safeHostname(url) {
+  try {
+    return new URL(url).hostname.replace(/[^\w.-]/g, '-') || 'site';
+  } catch {
+    return 'site';
+  }
+}
+
 // ---------- clone / pull ----------
 export function validateInputs(cfg, { workspace, category, url, name }) {
   if (typeof url !== 'string' || !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+(\.git)?$/i.test(url)) {
@@ -346,7 +453,7 @@ export async function doClone(cfg, { workspace, category, url, name }, onProgres
 }
 
 // ---------- job queue + history ----------
-export class RepoClonerCore {
+export class CloneItCore {
   constructor(cfg) {
     this.cfg = cfg;
     this.JOBS = [];
@@ -373,7 +480,7 @@ export class RepoClonerCore {
           if (n > maxSeq) maxSeq = n;
         }
       }
-      if (this.JOBS.length) console.log(`[repocloner] restored ${this.JOBS.length} job records from ${path.basename(file)}`);
+      if (this.JOBS.length) console.log(`[cloneit] restored ${this.JOBS.length} job records from ${path.basename(file)}`);
       return maxSeq;
     } catch {
       return 0;
@@ -453,7 +560,7 @@ export class RepoClonerCore {
       }
       if (job.status !== 'done') job.status = 'failed';
       job.finishedAt = new Date().toISOString();
-      console.log(`[repocloner] job ${job.id} ${job.status}${job.error ? ' — ' + job.error : ''}`);
+      console.log(`[cloneit] job ${job.id} ${job.status}${job.error ? ' — ' + job.error : ''}`);
     });
     this.pump();
     return job;
@@ -493,7 +600,7 @@ export async function watchClipboardLoop(cfg, doCloneFn) {
         text = r.stdout;
       }
     } catch { continue; }
-    const m = text.match(/REPOCLONER:\/\/clone\?(\S+)/);
+    const m = text.match(/CLONEIT:\/\/clone\?(\S+)/);
     if (!m || text === last) continue;
     last = text;
     const params = new URLSearchParams(m[1]);
@@ -502,8 +609,8 @@ export async function watchClipboardLoop(cfg, doCloneFn) {
       category: params.get('category') || '',
       url: params.get('url') || '',
     };
-    console.log('[repocloner] clipboard sentinel →', req.url, '→', req.category);
+    console.log('[cloneit] clipboard sentinel →', req.url, '→', req.category);
     const res = await doCloneFn(req);
-    console.log('[repocloner] clipboard result:', JSON.stringify(res.body));
+    console.log('[cloneit] clipboard result:', JSON.stringify(res.body));
   }
 }

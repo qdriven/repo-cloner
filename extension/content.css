@@ -1,5 +1,5 @@
-/* RepoCloner badge on GitHub pages. */
-.repocloner-badge {
+/* CloneIt badge on GitHub pages. */
+.cloneit-badge {
   position: fixed;
   right: 14px;
   bottom: 14px;
@@ -17,9 +17,9 @@
   box-shadow: 0 1px 4px rgba(16, 185, 129, .4);
   user-select: none;
 }
-.repocloner-badge:hover { opacity: 1; transform: scale(1.08); }
-.repocloner-badge.pulse { animation: repocloner-pulse .9s ease; }
-@keyframes repocloner-pulse {
+.cloneit-badge:hover { opacity: 1; transform: scale(1.08); }
+.cloneit-badge.pulse { animation: cloneit-pulse .9s ease; }
+@keyframes cloneit-pulse {
   0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .55); }
   100% { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); }
 }

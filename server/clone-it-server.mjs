@@ -1,21 +1,31 @@
-/* RepoCloner HTTP companion service — zero-dependency Node ≥ 18.
+/* CloneIt HTTP companion service — zero-dependency Node ≥ 18.
  *
  * Endpoints (all GET unless noted, JSON):
- *   GET /api/ping                 → { ok, version, workspaces, maxConcurrent }
- *   GET /api/workspaces           → [{ id, name, dir, referencesExists }]
- *   GET /api/tree?workspace=<id>  → { categories: [{ category, leaf }] }
- *   GET /api/registry?workspace=  → { projects: [{ name, repo, path }] }
+ *   GET /api/ping                       → { ok, version, workspaces, maxConcurrent }
+ *   GET /api/workspaces                 → [{ id, name, dir, referencesExists }]
+ *   GET /api/tree?workspace=<id>        → { categories: [{ category, leaf }] }
+ *   GET /api/registry?workspace=        → { projects: [{ name, repo, path }] }
  *   GET /api/list?workspace=&category=  → { repos: [...] }
- *   POST /api/clone               → body { workspace, category, url, name? }
- *                                    202 on enqueue; git runs in background
- *   GET /api/jobs                 → { jobs, running, maxConcurrent } recent records
- *   POST /api/retry               → body { id } re-queues a failed clone record
+ *   POST /api/clone                     → body { workspace, category, url, name? }
+ *                                        202 on enqueue; git runs in background
+ *   GET /api/jobs                      → { jobs, running, maxConcurrent } recent records
+ *   POST /api/retry                    → body { id } re-queues a failed clone record
+ *
+ * 收藏 (collect article addresses locally, crawling left empty):
+ *   GET  /api/collected                → { collected: [{ id, url, title, ... }] }
+ *   POST /api/collect                  → body { url, title?, note?, source? }
+ *                                        201 on record; crawling not implemented
+ *   POST /api/collect/remove           → body { id } delete a collected entry
+ *
+ * clone-website (处理逻辑先留空, 计划后续实现):
+ *   POST /api/clone-website            → body { workspace, url, name? }
+ *                                        501 Not Implemented (placeholder)
  *
  * Flags (see parseConfig in core.mjs):
  *   --workspace <dir>      repeatable; default = cwd
  *   --port <n>             default 7420
- *   --token <secret>       require X-RepoCloner-Token header on every request
- *   --watch-clipboard      poll clipboard for "REPOCLONER://clone?..." sentinel
+ *   --token <secret>       require X-CloneIt-Token header on every request
+ *   --watch-clipboard      poll clipboard for "CLONEIT://clone?..." sentinel
  *   --full                 disable --depth=1 shallow clone
  *   --no-pull              never auto-pull; refuse when dir exists
  *   --mirror URL           GitHub mirror prefix
@@ -30,15 +40,16 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 import {
-  parseConfig, VERSION, DEFAULT_PORT, ORIGIN_ALLOW,
+  parseConfig, VERSION, DEFAULT_PORT, ORIGIN_ALLOW, TOKEN_HEADER,
   wsById, referencesRoot,
   listCategories, listCategoryRepos, parseRegistry,
-  RepoClonerCore,
+  addCollected, listCollected, removeCollected, doCloneWebsite, isHttpUrl,
+  CloneItCore,
 } from './core.mjs';
 
 const argv = process.argv.slice(2);
 const cfg = parseConfig(argv);
-const core = new RepoClonerCore(cfg);
+const core = new CloneItCore(cfg);
 
 // ---------- helpers ----------
 function send(res, code, obj) {
@@ -84,7 +95,7 @@ async function watchClipboardLoop() {
         text = r.stdout;
       }
     } catch { continue; }
-    const m = text.match(/REPOCLONER:\/\/clone\?(\S+)/);
+    const m = text.match(/CLONEIT:\/\/clone\?(\S+)/);
     if (!m || text === last) continue;
     last = text;
     const params = new URLSearchParams(m[1]);
@@ -93,16 +104,16 @@ async function watchClipboardLoop() {
       category: params.get('category') || '',
       url: params.get('url') || '',
     };
-    console.log('[repocloner] clipboard sentinel →', req.url, '→', req.category);
+    console.log('[cloneit] clipboard sentinel →', req.url, '→', req.category);
     const job = core.enqueueClone(req);
-    console.log('[repocloner] clipboard enqueued:', job.id);
+    console.log('[cloneit] clipboard enqueued:', job.id);
   }
 }
 
 // ---------- http server ----------
 const server = http.createServer(async (req, res) => {
   if (cfg.token) {
-    if (req.headers['x-repocloner-token'] !== cfg.token) return fail(res, 401, 'bad token');
+    if (req.headers[TOKEN_HEADER] !== cfg.token) return fail(res, 401, 'bad token');
   }
   const origin = req.headers.origin || '';
   if (origin && ![...ORIGIN_ALLOW].some((p) => origin.startsWith(p))) {
@@ -172,6 +183,35 @@ const server = http.createServer(async (req, res) => {
       if (r.skipped) return ok(res, { job: { id: r.job.id, status: r.job.status }, skipped: true });
       return send(res, 202, { ok: true, queued: true, job: { id: r.job.id, status: r.job.status, retriedFrom: body.id } });
     }
+    // ---------- 收藏: record article addresses locally (crawl left empty) ----------
+    if (u.pathname === '/api/collected') {
+      return ok(res, { collected: listCollected(cfg) });
+    }
+    if (u.pathname === '/api/collect' && req.method === 'POST') {
+      let body;
+      try { body = JSON.parse(await readBody(req)); } catch { return fail(res, 400, 'bad json'); }
+      const r = addCollected(cfg, body);
+      if (r.code === 409) return send(res, 409, { ok: false, error: r.error, entry: r.entry });
+      if (r.code !== 200) return fail(res, r.code, r.error);
+      return send(res, 201, { ok: true, collected: r.entry });
+    }
+    if (u.pathname === '/api/collect/remove' && req.method === 'POST') {
+      let body;
+      try { body = JSON.parse(await readBody(req)); } catch { return fail(res, 400, 'bad json'); }
+      const r = removeCollected(cfg, body.id);
+      if (r.code !== 200) return fail(res, r.code, r.error);
+      return ok(res, { removed: r.entry });
+    }
+    // ---------- clone-website: placeholder (处理逻辑先留空) ----------
+    if (u.pathname === '/api/clone-website' && req.method === 'POST') {
+      let body;
+      try { body = JSON.parse(await readBody(req)); } catch { return fail(res, 400, 'bad json'); }
+      if (!isHttpUrl(body.url)) return fail(res, 400, 'url must be an http(s) address');
+      const r = doCloneWebsite(cfg, body);
+      if (r.code === 501) return send(res, 501, r.body);
+      if (r.code >= 400) return fail(res, r.code, r.body.error);
+      return send(res, 200, r.body);
+    }
     return fail(res, 404, 'not found: ' + u.pathname);
   } catch (e) {
     return fail(res, 500, 'server error: ' + e.message);
@@ -179,18 +219,18 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.on('error', (e) => {
-  console.error('[repocloner] server error:', e.message);
+  console.error('[cloneit] server error:', e.message);
   process.exit(1);
 });
 
 server.listen(cfg.port, '127.0.0.1', () => {
-  console.log(`[repocloner] v${VERSION} listening on http://127.0.0.1:${cfg.port}`);
-  for (const w of cfg.workspaces) console.log(`[repocloner]   workspace ${w.id}: ${w.dir}`);
-  if (cfg.token) console.log('[repocloner]   token auth enabled');
-  if (cfg.watchClipboard) console.log('[repocloner]   clipboard sentinel watching (REPOCLONER://clone?...)');
-  if (cfg.mirror) console.log('[repocloner]   mirror: ' + cfg.mirror);
-  if (cfg.proxy) console.log('[repocloner]   proxy: ' + cfg.proxy);
-  console.log(`[repocloner]   max concurrent clones: ${cfg.maxConcurrent}, git shallow: ${cfg.full ? 'full' : '--depth=1'}, retries: ${cfg.retry}`);
+  console.log(`[cloneit] v${VERSION} listening on http://127.0.0.1:${cfg.port}`);
+  for (const w of cfg.workspaces) console.log(`[cloneit]   workspace ${w.id}: ${w.dir}`);
+  if (cfg.token) console.log('[cloneit]   token auth enabled');
+  if (cfg.watchClipboard) console.log('[cloneit]   clipboard sentinel watching (CLONEIT://clone?...)');
+  if (cfg.mirror) console.log('[cloneit]   mirror: ' + cfg.mirror);
+  if (cfg.proxy) console.log('[cloneit]   proxy: ' + cfg.proxy);
+  console.log(`[cloneit]   max concurrent clones: ${cfg.maxConcurrent}, git shallow: ${cfg.full ? 'full' : '--depth=1'}, retries: ${cfg.retry}`);
 });
 
-if (cfg.watchClipboard) watchClipboardLoop().catch((e) => console.error('[repocloner] clipboard watcher crashed:', e));
+if (cfg.watchClipboard) watchClipboardLoop().catch((e) => console.error('[cloneit] clipboard watcher crashed:', e));

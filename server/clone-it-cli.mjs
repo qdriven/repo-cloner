@@ -1,13 +1,13 @@
-/* RepoCloner CLI — zero-dependency Node ≥ 18.
+/* CloneIt CLI — zero-dependency Node ≥ 18.
  *
  * Run a clone directly to the current repo's references/, or manage the
  * companion server / job history. Designed to be invoked as a skill:
  *
- *   node repo-cloner/server/repo-cloner-cli.mjs clone <url> [options]
- *   node repo-cloner/server/repo-cloner-cli.mjs list [options]
- *   node repo-cloner/server/repo-cloner-cli.mjs jobs [--limit N]
- *   node repo-cloner/server/repo-cloner-cli.mjs retry <id>
- *   node repo-cloner/server/repo-cloner-cli.mjs server [options]
+ *   node clone-it/server/clone-it-cli.mjs clone <url> [options]
+ *   node clone-it/server/clone-it-cli.mjs list [options]
+ *   node clone-it/server/clone-it-cli.mjs jobs [--limit N]
+ *   node clone-it/server/clone-it-cli.mjs retry <id>
+ *   node clone-it/server/clone-it-cli.mjs server [options]
  *
  * The `clone` subcommand runs synchronously in the foreground, prints
  * git progress live, and records the attempt into the shared jobs.json
@@ -21,7 +21,8 @@ import fs from 'node:fs';
 import {
   parseConfig, VERSION, wsById, referencesRoot,
   listCategories, listCategoryRepos, parseRegistry,
-  RepoClonerCore, doClone, validateInputs,
+  CloneItCore, doClone, validateInputs,
+  addCollected, listCollected, removeCollected, doCloneWebsite, isHttpUrl,
 } from './core.mjs';
 
 const args = process.argv.slice(2);
@@ -48,6 +49,9 @@ function parseArgs(tokens) {
     else if (t === '--category') opts.category = tokens[++i];
     else if (t === '--name') opts.name = tokens[++i];
     else if (t === '--workspace-id') opts.workspaceId = tokens[++i];
+    else if (t === '--title') opts.title = tokens[++i];
+    else if (t === '--note') opts.note = tokens[++i];
+    else if (t === '--source') opts.source = tokens[++i];
     else if (t === '--limit') opts.limit = Number(tokens[++i]);
     else if (t === '--max-concurrent') opts.maxConcurrent = Number(tokens[++i]);
     else pos.push(t);
@@ -85,7 +89,7 @@ async function cmdClone(pos, opts) {
   const category = opts.category || 'others';
   const ws = wsById(cfg.workspaces, opts.workspaceId || cfg.workspaces[0].id);
 
-  out(`RepoCloner v${VERSION}`);
+  out(`CloneIt v${VERSION}`);
   out(`workspace: ${ws.id}  ${ws.dir}`);
   out(`category:   ${category}`);
   out(`url:        ${url}`);
@@ -93,7 +97,7 @@ async function cmdClone(pos, opts) {
   out('');
 
   // record the job up front so it lands in history even if it fails
-  const core = new RepoClonerCore(cfg);
+  const core = new CloneItCore(cfg);
   // enqueue gives us a job record + runs the queue; but for CLI we want
   // synchronous live output, so run doClone directly and write the record.
   const v = validateInputs(cfg, { workspace: ws.id, category, url, name: opts.name });
@@ -162,7 +166,7 @@ function cmdList(pos, opts) {
 // ---------- jobs ----------
 function cmdJobs(pos, opts) {
   const cfg = buildCfg(opts);
-  const core = new RepoClonerCore(cfg);
+  const core = new CloneItCore(cfg);
   const jobs = core.getJobs(opts.limit || 50);
   const ICON = { queued: '⏳', running: '🔄', retrying: '🔁', done: '✅', failed: '❌' };
   if (!jobs.length) { out('no clone history yet'); return; }
@@ -180,7 +184,7 @@ async function cmdRetry(pos, opts) {
   const id = pos[0];
   if (!id) { err('usage: retry <job-id>'); process.exit(2); }
   const cfg = buildCfg(opts);
-  const core = new RepoClonerCore(cfg);
+  const core = new CloneItCore(cfg);
   const r = core.retryJob(id);
   if (r.error) { err('error: ' + r.error); process.exit(1); }
   if (r.skipped) { out(`job ${id} already ${r.job.status}, not re-queued`); return; }
@@ -191,7 +195,7 @@ async function cmdRetry(pos, opts) {
 // ---------- server ----------
 async function cmdServer(pos, opts) {
   // re-exec the server module so it owns the event loop
-  const serverFile = new URL('./repo-cloner-server.mjs', import.meta.url).pathname;
+  const serverFile = new URL('./clone-it-server.mjs', import.meta.url).pathname;
   const { spawn } = await import('node:child_process');
   const argv = [];
   for (const w of opts.workspaces || []) argv.push('--workspace', w);
@@ -208,20 +212,61 @@ async function cmdServer(pos, opts) {
   child.on('close', (code) => process.exit(code ?? 0));
 }
 
+// ---------- collect (收藏: record article address, crawl left empty) ----------
+function cmdCollect(pos, opts) {
+  const url = pos[0];
+  if (!url) { err('usage: collect <url> [--title T] [--note N] [--source S]'); process.exit(2); }
+  const cfg = buildCfg(opts);
+  const r = addCollected(cfg, { url, title: opts.title, note: opts.note, source: opts.source });
+  if (r.code === 409) { out('已收藏过: ' + url); return; }
+  if (r.code !== 200) { err('error: ' + r.error); process.exit(r.code); }
+  out('已收藏: ' + r.entry.url);
+  out('  id:        ' + r.entry.id);
+  if (r.entry.title) out('  title:    ' + r.entry.title);
+  out('  crawl:     ' + r.entry.crawlStatus + ' (爬取任务暂未实现)');
+}
+
+function cmdCollected(pos, opts) {
+  const cfg = buildCfg(opts);
+  const list = listCollected(cfg);
+  if (!list.length) { out('暂无收藏记录'); return; }
+  out(`收藏记录 (${list.length}):`);
+  for (const c of list) {
+    const t = c.title ? '  ' + c.title : '';
+    out(`  ${c.id}  ${c.url}${t}`);
+  }
+}
+
+// ---------- clone-website (处理逻辑先留空, 计划后续实现) ----------
+function cmdCloneWebsite(pos, opts) {
+  const url = pos[0];
+  if (!url) { err('usage: clone-website <url> [--name N] [--workspace-id ws0]'); process.exit(2); }
+  const cfg = buildCfg(opts);
+  const r = doCloneWebsite(cfg, { workspace: opts.workspaceId || cfg.workspaces[0].id, url, name: opts.name });
+  if (r.code === 501) {
+    out('clone-website 暂未实现 (计划后续实现)');
+    out('  url:       ' + r.body.url);
+    out('  planned:   ' + r.body.plannedPath);
+    process.exit(0);
+  }
+  if (r.code >= 400) { err('error: ' + r.body.error); process.exit(r.code); }
+  out('ok: ' + r.body.plannedPath);
+}
+
 // ---------- dispatch ----------
 const rest = args.slice(1);
 const { pos, opts } = parseArgs(rest);
 
-const HELP = `RepoCloner v${VERSION} — clone GitHub repos into references/
+const HELP = `CloneIt v${VERSION} — clone GitHub repos into references/
 
 usage:
-  repo-cloner-cli.mjs clone <url> [--category X] [--name N] [--workspace-id ws0]
+  clone-it-cli.mjs clone <url> [--category X] [--name N] [--workspace-id ws0]
                                  [--full] [--no-pull] [--retry N] [--mirror URL] [--proxy URL]
-  repo-cloner-cli.mjs list   [--category X] [--workspace-id ws0]
-  repo-cloner-cli.mjs jobs   [--limit N]
-  repo-cloner-cli.mjs retry  <job-id>
-  repo-cloner-cli.mjs server [--port N] [--token T] [--watch-clipboard] [--max-concurrent N] [--workspace D] ...
-  repo-cloner-cli.mjs help
+  clone-it-cli.mjs list   [--category X] [--workspace-id ws0]
+  clone-it-cli.mjs jobs   [--limit N]
+  clone-it-cli.mjs retry  <job-id>
+  clone-it-cli.mjs server [--port N] [--token T] [--watch-clipboard] [--max-concurrent N] [--workspace D] ...
+  clone-it-cli.mjs help
 
 default workspace = current working directory (clone lands in ./references/<category>/<name>).
 history is recorded in server/jobs.json and shared with the HTTP server.
@@ -232,6 +277,9 @@ switch (sub) {
   case 'list': cmdList(pos, opts); break;
   case 'jobs': cmdJobs(pos, opts); break;
   case 'retry': await cmdRetry(pos, opts); break;
+  case 'collect': cmdCollect(pos, opts); break;
+  case 'collected': cmdCollected(pos, opts); break;
+  case 'clone-website': cmdCloneWebsite(pos, opts); break;
   case 'server': await cmdServer(pos, opts); break;
   case 'help': case undefined: case '-h': case '--help': out(HELP); break;
   default: err(`unknown subcommand: ${sub}\n`); out(HELP); process.exit(2);

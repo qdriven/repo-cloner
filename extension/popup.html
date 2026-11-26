@@ -6,13 +6,15 @@
 </head>
 <body>
 <header class="app">
-  <div class="logo">R</div>
-  <h1>RepoCloner</h1>
+  <div class="logo">C</div>
+  <h1>CloneIt</h1>
   <div class="ws-picker"><select id="ws" title="目标仓库"></select></div>
 </header>
 
 <nav class="tabs">
   <button class="tab on" data-tab="clone">Clone</button>
+  <button class="tab" data-tab="collect">收藏</button>
+  <button class="tab" data-tab="website">克隆网站</button>
   <button class="tab" data-tab="history">历史 / 进度</button>
 </nav>
 
@@ -40,6 +42,42 @@
       <button class="ghost" id="copy" title="复制 git clone 命令(服务离线时可用)">复制命令</button>
     </div>
     <div class="status" id="status"></div>
+  </section>
+
+  <!-- ===== 收藏 tab (记录文章地址到本地, 爬取留空) ===== -->
+  <section class="tab-panel" id="panel-collect" style="display:none">
+    <div class="card">
+      <div class="repo-line">
+        <span class="repo-name" id="pageTitle">当前页面</span>
+      </div>
+      <div class="repo-desc" id="pageUrl" style="display:none"></div>
+    </div>
+    <label class="lbl">标题 (可选)</label>
+    <input id="colTitle" type="text" placeholder="为这篇文章起个名字" />
+    <label class="lbl">备注 (可选)</label>
+    <input id="colNote" type="text" placeholder="一句话备注" />
+    <div class="actions">
+      <button class="primary" id="colGo">收藏</button>
+      <button class="ghost" id="colReload">刷新列表</button>
+    </div>
+    <div class="status" id="colStatus"></div>
+    <label class="lbl">已收藏 (本地文件记录)</label>
+    <div id="colList"><span class="pill gray">加载中…</span></div>
+  </section>
+
+  <!-- ===== clone-website tab (处理逻辑留空, 计划后续实现) ===== -->
+  <section class="tab-panel" id="panel-website" style="display:none">
+    <div class="card">
+      <div class="repo-desc" id="wsInfo">克隆网站功能:输入站点地址,本地化保存整站。<strong>处理逻辑暂未实现,计划后续实现。</strong>当前仅做地址校验与规划路径展示。</div>
+    </div>
+    <label class="lbl">站点地址</label>
+    <input id="siteUrl" type="text" placeholder="https://example.com" />
+    <label class="lbl">名称 (可选)</label>
+    <input id="siteName" type="text" placeholder="站点名称 (落盘目录名)" />
+    <div class="actions">
+      <button class="primary" id="siteGo">克隆网站</button>
+    </div>
+    <div class="status" id="siteStatus"></div>
   </section>
 
   <!-- ===== History / Progress tab ===== -->
