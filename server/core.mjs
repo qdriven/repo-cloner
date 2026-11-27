@@ -320,10 +320,13 @@ export function listCategoryRepos(ws, category) {
     .map((e) => e.name);
 }
 
-// ---------- collected links (收藏: record article addresses locally) ----------
+// ---------- collected & clone-website store (server/collected.json) ----------
 //
-// 收藏功能: 看到文章后把文章地址记录到本地文件。后端只负责记录地址,
-// 爬取/内容抓取任务先留空(crawlStatus 固定为 "pending"), 后续再实现。
+// 统一存储在 server/collected.json，用 category 区分：
+//   - "collection": 收藏文章/网页地址（爬取内容任务待后续实现）
+//   - "clone":      待克隆网站记录（整站克隆任务待后续实现）
+export const COLLECT_CATEGORIES = new Set(['collection', 'clone']);
+
 export function collectedFile(cfg) {
   return path.join(__dirname, 'collected.json');
 }
@@ -336,11 +339,20 @@ export function normalizeUrl(url) {
   return String(url).trim().replace(/\/+$/, '');
 }
 
+export function normalizeCollectCategory(cat) {
+  return cat === 'clone' ? 'clone' : 'collection';
+}
+
+function normalizeCollectedEntry(c) {
+  if (!c || typeof c !== 'object') return null;
+  return { ...c, category: normalizeCollectCategory(c.category || c.type) };
+}
+
 function loadCollected(cfg) {
   const file = collectedFile(cfg);
   try {
     const arr = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return Array.isArray(arr) ? arr : [];
+    return Array.isArray(arr) ? arr.map(normalizeCollectedEntry).filter(Boolean) : [];
   } catch {
     return [];
   }
@@ -351,33 +363,48 @@ function saveCollected(cfg, list) {
 }
 
 /**
- * Record an article/page address into the local collected store.
- * Crawling is intentionally left empty for now — only the address is stored.
+ * Record an item into collected.json under category "collection" or "clone".
+ * Actual crawling / website cloning is left as pending ("crawlStatus": "pending")
+ * for future processing.
  */
-export function addCollected(cfg, { url, title, note, source }) {
+export function addCollected(cfg, { category, type, url, title, note, source, name, workspace, plannedPath }) {
   if (!isHttpUrl(url)) return { code: 400, error: 'url must be an http(s) address' };
+  const cat = normalizeCollectCategory(category || type);
   const norm = normalizeUrl(url);
   const list = loadCollected(cfg);
-  if (list.some((c) => c && c.url === norm)) {
-    return { code: 409, error: 'already collected: ' + norm, entry: list.find((c) => c.url === norm) };
+  const dup = list.find((c) => c.category === cat && c.url === norm);
+  if (dup) {
+    const label = cat === 'clone' ? 'already recorded for clone: ' : 'already collected: ';
+    return { code: 409, error: label + norm, entry: dup };
   }
+  const prefix = cat === 'clone' ? 'clw-' : 'col-';
   const entry = {
-    id: 'col-' + Date.now().toString(36) + '-' + (list.length + 1),
+    id: prefix + Date.now().toString(36) + '-' + (list.length + 1),
+    category: cat,
     url: norm,
     title: typeof title === 'string' && title.trim() ? title.trim() : null,
+    ...(cat === 'clone' ? {
+      name: typeof name === 'string' && name.trim() ? name.trim() : null,
+      workspace: typeof workspace === 'string' && workspace.trim() ? workspace.trim() : null,
+      plannedPath: typeof plannedPath === 'string' && plannedPath.trim() ? plannedPath.trim() : null,
+    } : {}),
     note: typeof note === 'string' && note.trim() ? note.trim() : null,
     source: typeof source === 'string' && source.trim() ? source.trim() : null,
     collectedAt: new Date().toISOString(),
-    crawlStatus: 'pending', // 爬取任务先留空, 计划后续实现
+    crawlStatus: 'pending',
   };
   list.unshift(entry);
-  if (list.length > 500) list.length = 500;
+  if (list.length > 1000) list.length = 1000;
   saveCollected(cfg, list);
   return { code: 200, entry };
 }
 
-export function listCollected(cfg) {
-  return loadCollected(cfg);
+export function listCollected(cfg, category = null) {
+  const list = loadCollected(cfg);
+  if (category && COLLECT_CATEGORIES.has(category)) {
+    return list.filter((c) => c.category === category);
+  }
+  return list;
 }
 
 export function removeCollected(cfg, id) {
@@ -389,37 +416,57 @@ export function removeCollected(cfg, id) {
   return { code: 200, entry: removed };
 }
 
-// ---------- clone-website (clone website: 处理逻辑先留空, 计划后续实现) ----------
-/**
- * Placeholder for the clone-website feature. The endpoint and job record are
- * wired up, but the actual website cloning logic is intentionally left empty
- * for now and will be implemented later. Returns 501 Not Implemented.
- */
-export function doCloneWebsite(cfg, { workspace, url, name }) {
-  if (!isHttpUrl(url)) return { code: 400, error: 'url must be an http(s) address' };
-  const ws = wsById(cfg.workspaces, workspace);
-  const norm = normalizeUrl(url);
-  const siteName = name && /^[\w.-]+$/.test(name) ? name : safeHostname(norm);
-  return {
-    code: 501,
-    body: {
-      ok: false,
-      notImplemented: true,
-      error: 'clone-website 处理逻辑暂未实现 (计划后续实现)',
-      workspace: ws ? ws.id : null,
-      url: norm,
-      name: siteName,
-      plannedPath: ws ? path.join(ws.dir, 'references', 'websites', siteName) : null,
-    },
-  };
-}
-
-function safeHostname(url) {
+// ---------- clone-website (记录到 collected.json [category=clone], 实际克隆待后续实现) ----------
+export function safeSiteName(url) {
   try {
-    return new URL(url).hostname.replace(/[^\w.-]/g, '-') || 'site';
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./i, '').replace(/[^\w.-]/g, '-') || 'site';
+    const segs = u.pathname.split('/').filter(Boolean).map((s) => s.replace(/[^\w.-]/g, '-')).filter(Boolean);
+    const full = segs.length ? `${host}-${segs.join('-')}` : host;
+    return full.slice(0, 80).replace(/-+$/g, '') || 'site';
   } catch {
     return 'site';
   }
+}
+
+export function doCloneWebsite(cfg, { workspace, url, name, title, note, source }) {
+  if (!isHttpUrl(url)) return { code: 400, body: { ok: false, error: 'url must be an http(s) address' } };
+  const ws = wsById(cfg.workspaces, workspace);
+  const norm = normalizeUrl(url);
+  const rawName = typeof name === 'string' ? name.trim().replace(/[\\/:*?"<>|\x00-\x1f]+/g, '-') : '';
+  const siteName = (rawName && rawName !== '.' && !rawName.includes('..')) ? rawName : safeSiteName(norm);
+  const plannedPath = ws ? path.join(ws.dir, 'references', 'websites', siteName) : null;
+  const r = addCollected(cfg, {
+    category: 'clone',
+    url: norm,
+    title,
+    note,
+    source: source || 'browser',
+    name: siteName,
+    workspace: ws ? ws.id : null,
+    plannedPath,
+  });
+  if (r.code === 409) {
+    return {
+      code: 409,
+      body: { ok: false, error: r.error, entry: r.entry, plannedPath: r.entry.plannedPath || plannedPath },
+    };
+  }
+  if (r.code !== 200) {
+    return { code: r.code, body: { ok: false, error: r.error } };
+  }
+  return {
+    code: 201,
+    body: {
+      ok: true,
+      recorded: true,
+      entry: r.entry,
+      workspace: ws ? ws.id : null,
+      url: norm,
+      name: siteName,
+      plannedPath,
+    },
+  };
 }
 
 // ---------- clone / pull ----------

@@ -1,6 +1,6 @@
 ---
 name: clone-it
-description: CloneIt 浏览器插件 + 本地伴侣服务：把 GitHub 仓库 clone 到 references/<category>/<name>（默认浅克隆、最多 5 并发、自动重试、历史进度），收藏文章地址到本地，克隆网站入口（尚未实现）。提供一键安装脚本和后台服务管理脚本，统一支持配置文件、环境变量与命令行参数。当用户要安装 CloneIt 插件、启动/停止/重启/查看 CloneIt 后台服务、修改配置或设置开机自启，把 GitHub 仓库拉到 references、查看或重跑克隆任务、收藏文章地址，或提到 clone-it / repo-cloner / 克隆仓库到 references 时使用。
+description: CloneIt 浏览器插件 + 本地伴侣服务：把 GitHub 仓库 clone 到 references/<category>/<name>（默认浅克隆、最多 5 并发、自动重试、历史进度），自动识别当前页网址进行收藏（category=collection）或记录待克隆网站（category=clone）到 server/collected.json。提供一键安装脚本和后台服务管理脚本，统一支持配置文件、环境变量与命令行参数。当用户要安装 CloneIt 插件、启动/停止/重启/查看 CloneIt 后台服务、修改配置或设置开机自启，把 GitHub 仓库拉到 references、查看或重跑克隆任务、收藏文章地址或记录待克隆网站，或提到 clone-it / repo-cloner / 克隆仓库到 references 时使用。
 ---
 
 # CloneIt
@@ -46,12 +46,12 @@ node innate-tools/repo-cloner/server/clone-it-cli.mjs list [--category X]
 node innate-tools/repo-cloner/server/clone-it-cli.mjs jobs [--limit 30]
 node innate-tools/repo-cloner/server/clone-it-cli.mjs retry <job-id>
 node innate-tools/repo-cloner/server/clone-it-cli.mjs collect <url> [--title T] [--note N]
-node innate-tools/repo-cloner/server/clone-it-cli.mjs collected
+node innate-tools/repo-cloner/server/clone-it-cli.mjs clone-website <url> [--name N] [--title T] [--note N]
+node innate-tools/repo-cloner/server/clone-it-cli.mjs collected [--category collection|clone]
 ```
 
 - 类别默认 `others`；目录已存在且 origin 相同时自动 `pull --ff-only`，origin 不同时返回 409。
-- 历史记录在 `server/jobs.json`，收藏记录在 `server/collected.json`，CLI 和服务共用。
-- `clone-website` 还没实现，只返回规划路径 `references/websites/<name>`。
+- 仓库克隆历史在 `server/jobs.json`；收藏与待克隆网站统一保存在 `server/collected.json`，通过 `category` 区分（`collection` 收藏文章、`clone` 待克隆网站，带 `plannedPath` 与 `crawlStatus: "pending"`），CLI 和服务共用。
 
 ## 排查
 

@@ -115,7 +115,15 @@ cmd_start() {
   if ping_ok; then echo "CloneIt 已在运行: http://127.0.0.1:$PORT"; return 0; fi
   mkdir -p "$RUN_DIR"
   local node; node="$(node_bin)"
-  (cd "$WORKSPACE" || exit 1; nohup "$node" "$SERVER" ${SERVER_ARGS[@]+"${SERVER_ARGS[@]}"} >>"$LOG_FILE" 2>&1 & echo $! >"$PID_FILE")
+  "$node" -e '
+    const fs = require("node:fs");
+    const { spawn } = require("node:child_process");
+    const [cwd, logFile, pidFile, bin, ...args] = process.argv.slice(1);
+    const out = fs.openSync(logFile, "a");
+    const child = spawn(bin, args, { cwd, detached: true, stdio: ["ignore", out, out] });
+    fs.writeFileSync(pidFile, String(child.pid) + "\n");
+    child.unref();
+  ' "$WORKSPACE" "$LOG_FILE" "$PID_FILE" "$node" "$SERVER" ${SERVER_ARGS[@]+"${SERVER_ARGS[@]}"}
   if wait_ready; then
     echo "CloneIt 已启动: http://127.0.0.1:$PORT  (pid $(cat "$PID_FILE"))"
     if [[ -n "$LOADED_CFG" ]]; then echo "  config:    $LOADED_CFG"; fi

@@ -5,13 +5,15 @@ const $ = (id) => document.getElementById(id);
 const FIXED_CATS = ['skills', 'plugins', 'products', 'others'];
 const state = {
   repo: null,        // { owner, name, url }
+  currentPage: null, // { url, title }
+  siteUrlEdited: false,
   workspace: null,
   categories: [],
   picked: null,
   pickedSub: null,
   serverUp: false,
   jobsOpen: false,   // true when history tab is active
-  collectOpen: false,
+  collectFilter: 'all', // 'all' | 'collection' | 'clone'
   collected: [],
 };
 
@@ -37,6 +39,18 @@ async function fetchApi(pathname, opts = {}) {
   return body;
 }
 
+function defaultSiteName(url) {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./i, '').replace(/[^\w.-]/g, '-') || 'site';
+    const segs = u.pathname.split('/').filter(Boolean).map((s) => s.replace(/[^\w.-]/g, '-')).filter(Boolean);
+    const full = segs.length ? `${host}-${segs.join('-')}` : host;
+    return full.slice(0, 80).replace(/-+$/g, '') || 'site';
+  } catch {
+    return '站点名称';
+  }
+}
+
 // ---------- tab switching ----------
 const TAB_MAP = {
   clone: 'panel-clone',
@@ -59,19 +73,12 @@ document.querySelectorAll('nav.tabs .tab').forEach((btn) => {
       state.jobsOpen = false;
       stopJobsPolling();
     }
-    if (tab === 'collect') {
-      state.collectOpen = true;
-      renderCollected();
-    } else {
-      state.collectOpen = false;
+    if (tab === 'collect' || tab === 'website') {
+      renderPage();
+      refreshCollectedStore();
     }
   };
 });
-
-function switchToTab(name) {
-  const btn = document.querySelector(`nav.tabs .tab[data-tab="${name}"]`);
-  if (btn) btn.click();
-}
 
 // ---------- repo detection ----------
 async function detectRepo() {
@@ -84,7 +91,7 @@ async function detectRepo() {
   return { owner, name, url: `https://github.com/${owner}/${name}` };
 }
 
-// ---------- current page info (for 收藏, any page) ----------
+// ---------- current page info (for 收藏 & 克隆网站, any http/https page) ----------
 async function detectPage() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !/^https?:\/\//.test(tab.url || '')) return null;
@@ -168,9 +175,10 @@ async function pingServer() {
 function cloneCommand() {
   const r = state.repo;
   const ws = WORKSPACES_CACHE.find((w) => w.id === state.workspace);
-  const root = ws ? ws.dir.replace(/[\\/]+$/, '') + '\\references' : '<workspace>\\references';
-  const cat = state.pickedSub ? `${state.picked}/${state.pickedSub}` : (state.picked || '<category>');
-  return `git clone --depth=1 ${r.url}.git "${root}\\${cat}\\${r.name}"`;
+  const sep = ws && ws.dir.includes('\\') ? '\\' : '/';
+  const root = ws ? ws.dir.replace(/[\\/]+$/, '') + sep + 'references' : `<workspace>${sep}references`;
+  const cat = (state.pickedSub ? `${state.picked}/${state.pickedSub}` : (state.picked || '<category>')).replace(/\//g, sep);
+  return `git clone --depth=1 ${r.url}.git "${root}${sep}${cat}${sep}${r.name}"`;
 }
 
 let WORKSPACES_CACHE = [];
@@ -202,14 +210,14 @@ async function loadAll() {
     };
     await loadCatsAndTree();
     await renderPage();
-    await renderCollected();
+    await refreshCollectedStore();
   } else {
     WORKSPACES_CACHE = [];
     $('ws').innerHTML = '<option>—</option>';
     state.workspace = 'ws0';
     renderCats(); renderSubs(); renderRepo();
     await renderPage();
-    await renderCollected();
+    await refreshCollectedStore();
   }
 }
 
@@ -224,125 +232,213 @@ async function loadCatsAndTree() {
     const tree = await fetchApi(`/api/tree?workspace=${state.workspace}`);
     state.categories = tree.categories || [];
     renderCats(); renderSubs();
-  } catch (e) {
+  } catch {
     state.categories = [];
     renderCats(); renderSubs();
   }
   renderRepo();
 }
 
-// ---------- 收藏: record article address locally (crawl left empty) ----------
+// ---------- current page auto-fill (收藏 & 克隆网站) ----------
 async function renderPage() {
   const page = await detectPage();
+  state.currentPage = page;
+
+  // 收藏 tab
   if (!page) {
     $('pageTitle').textContent = '无可用页面';
     $('pageUrl').style.display = 'none';
-    return;
+    $('colTitle').placeholder = '为这篇文章起个名字';
+  } else {
+    $('pageTitle').textContent = page.title || page.url;
+    $('pageUrl').textContent = page.url;
+    $('pageUrl').style.display = '';
+    $('colTitle').placeholder = page.title || '为这篇文章起个名字';
   }
-  $('pageTitle').textContent = page.title || page.url;
-  $('pageUrl').textContent = page.url;
-  $('pageUrl').style.display = '';
+
+  // 克隆网站 tab: 自动识别当前网址并填入输入框
+  if (!page) {
+    $('sitePageTitle').textContent = '未识别到当前网页（可手动输入网址）';
+    $('sitePageUrl').style.display = 'none';
+  } else {
+    $('sitePageTitle').textContent = page.title || page.url;
+    $('sitePageUrl').textContent = page.url;
+    $('sitePageUrl').style.display = '';
+    if (!state.siteUrlEdited) {
+      $('siteUrl').value = page.url;
+      $('siteName').placeholder = '默认: ' + defaultSiteName(page.url);
+    }
+  }
 }
 
+$('siteUrl').oninput = () => {
+  state.siteUrlEdited = true;
+  const v = $('siteUrl').value.trim();
+  $('siteName').placeholder = /^https?:\/\/\S+$/i.test(v)
+    ? '默认: ' + defaultSiteName(v)
+    : '默认按网址自动生成';
+};
+
+// ---------- collected.json shared store (category: collection | clone) ----------
 function setColStatus(msg, kind = 'busy') {
   const el = $('colStatus');
   el.className = 'status show ' + kind;
   el.innerHTML = escapeHtml(msg);
 }
 
-async function renderCollected() {
-  const box = $('colList');
-  if (!state.serverUp) {
-    box.innerHTML = '<span class="pill gray">服务离线 — 无法读取收藏</span>';
-    return;
-  }
-  try {
-    const data = await fetchApi('/api/collected');
-    state.collected = data.collected || [];
-    if (!state.collected.length) {
-      box.innerHTML = '<span class="pill gray">暂无收藏</span>';
-      return;
-    }
-    box.innerHTML = state.collected.map((c) => `
-      <div class="job">
-        <div class="jhead">
-          <span class="jname">${escapeHtml(c.title || c.url)}</span>
-          <span class="jstatus">${escapeHtml(c.crawlStatus || 'pending')}</span>
-        </div>
-        <div class="jcmd">${escapeHtml(c.url)}</div>
-        ${c.note ? `<div class="jerr" style="color:var(--ink-2)">${escapeHtml(c.note)}</div>` : ''}
-        ${c.source ? `<div class="jcmd">来源: ${escapeHtml(c.source)}</div>` : ''}
-        ${c.id ? `<button class="retry" data-id="${escapeHtml(c.id)}">删除</button>` : ''}
-      </div>`).join('');
-    box.querySelectorAll('.retry').forEach((b) => {
-      b.onclick = async () => {
-        b.disabled = true;
-        try {
-          await fetchApi('/api/collect/remove', { method: 'POST', body: JSON.stringify({ id: b.dataset.id }), headers: { 'Content-Type': 'application/json' } });
-          setColStatus('已删除', 'ok');
-          await renderCollected();
-        } catch (e) { setColStatus('删除失败: ' + e.message, 'err'); }
-      };
-    });
-  } catch (e) {
-    box.innerHTML = `<span class="pill gray">${escapeHtml(e.message)}</span>`;
-  }
-}
-
-$('colGo').onclick = async () => {
-  const page = await detectPage();
-  if (!page) { setColStatus('没有可收藏的页面', 'err'); return; }
-  const btn = $('colGo');
-  btn.disabled = true;
-  try {
-    const body = JSON.stringify({
-      url: page.url,
-      title: $('colTitle').value.trim() || null,
-      note: $('colNote').value.trim() || null,
-      source: 'browser',
-    });
-    const res = await fetchApi('/api/collect', { method: 'POST', body, headers: { 'Content-Type': 'application/json' } });
-    setColStatus(`已收藏 → ${res.collected.url} (爬取暂未实现)`, 'ok');
-    $('colTitle').value = ''; $('colNote').value = '';
-    await renderCollected();
-  } catch (e) {
-    setColStatus('收藏失败: ' + e.message, 'err');
-  }
-  btn.disabled = false;
-};
-$('colReload').onclick = () => renderCollected();
-
-// ---------- clone-website (placeholder, planned later) ----------
 function setSiteStatus(msg, kind = 'busy') {
   const el = $('siteStatus');
   el.className = 'status show ' + kind;
   el.innerHTML = escapeHtml(msg);
 }
 
-$('siteGo').onclick = async () => {
-  const url = $('siteUrl').value.trim();
-  if (!/^https?:\/\/\S+$/i.test(url)) { setSiteStatus('请输入合法的 http(s) 站点地址', 'err'); return; }
-  const btn = $('siteGo');
+function renderEntryCard(c) {
+  const cat = c.category === 'clone' ? 'clone' : 'collection';
+  const catPill = cat === 'clone'
+    ? '<span class="pill gray">clone</span>'
+    : '<span class="pill">collection</span>';
+  const heading = c.title || c.name || c.url;
+  return `
+    <div class="job">
+      <div class="jhead">
+        ${catPill}
+        <span class="jname">${escapeHtml(heading)}</span>
+        <span class="jstatus">${escapeHtml(c.crawlStatus || 'pending')}</span>
+      </div>
+      <div class="jcmd" title="${escapeHtml(c.url)}">${escapeHtml(c.url)}</div>
+      ${c.plannedPath ? `<div class="jcmd" title="${escapeHtml(c.plannedPath)}">目标: ${escapeHtml(c.plannedPath)}</div>` : ''}
+      ${c.note ? `<div class="jerr" style="color:var(--ink-2)">${escapeHtml(c.note)}</div>` : ''}
+      ${c.id ? `<button class="retry" data-id="${escapeHtml(c.id)}" style="margin-top:4px">删除</button>` : ''}
+    </div>`;
+}
+
+function bindRemoveButtons(box, onStatus) {
+  box.querySelectorAll('.retry[data-id]').forEach((b) => {
+    b.onclick = async () => {
+      b.disabled = true;
+      try {
+        await fetchApi('/api/collect/remove', {
+          method: 'POST',
+          body: JSON.stringify({ id: b.dataset.id }),
+          headers: { 'Content-Type': 'application/json' },
+        });
+        onStatus('已删除', 'ok');
+        await refreshCollectedStore();
+      } catch (e) {
+        onStatus('删除失败: ' + e.message, 'err');
+        b.disabled = false;
+      }
+    };
+  });
+}
+
+function renderCollectedLists() {
+  // 1) 收藏 tab 列表 (支持 全部 / collection / clone 过滤)
+  const colBox = $('colList');
+  const filtered = state.collectFilter === 'all'
+    ? state.collected
+    : state.collected.filter((c) => (c.category || 'collection') === state.collectFilter);
+  if (!filtered.length) {
+    colBox.innerHTML = '<span class="pill gray">暂无记录</span>';
+  } else {
+    colBox.innerHTML = filtered.map(renderEntryCard).join('');
+    bindRemoveButtons(colBox, setColStatus);
+  }
+
+  // 2) 克隆网站 tab 列表 (固定展示 category === 'clone')
+  const siteBox = $('siteList');
+  const clones = state.collected.filter((c) => c.category === 'clone');
+  if (!clones.length) {
+    siteBox.innerHTML = '<span class="pill gray">暂无待克隆网站记录</span>';
+  } else {
+    siteBox.innerHTML = clones.map(renderEntryCard).join('');
+    bindRemoveButtons(siteBox, setSiteStatus);
+  }
+}
+
+async function refreshCollectedStore() {
+  const colBox = $('colList');
+  const siteBox = $('siteList');
+  if (!state.serverUp) {
+    colBox.innerHTML = '<span class="pill gray">服务离线 — 无法读取记录</span>';
+    siteBox.innerHTML = '<span class="pill gray">服务离线 — 无法读取记录</span>';
+    return;
+  }
+  try {
+    const data = await fetchApi('/api/collected');
+    state.collected = data.collected || [];
+    renderCollectedLists();
+  } catch (e) {
+    const msg = `<span class="pill gray">${escapeHtml(e.message)}</span>`;
+    colBox.innerHTML = msg;
+    siteBox.innerHTML = msg;
+  }
+}
+
+document.querySelectorAll('#colFilter button[data-cat]').forEach((btn) => {
+  btn.onclick = () => {
+    state.collectFilter = btn.dataset.cat;
+    document.querySelectorAll('#colFilter button[data-cat]').forEach((b) => b.classList.toggle('on', b === btn));
+    renderCollectedLists();
+  };
+});
+
+$('colGo').onclick = async () => {
+  const page = await detectPage();
+  if (!page) { setColStatus('没有可收藏的页面', 'err'); return; }
+  if (!state.serverUp) { setColStatus('服务离线 — 请先启动后台服务', 'err'); return; }
+  const btn = $('colGo');
   btn.disabled = true;
   try {
-    const r = await fetch(apiBase(await settings()) + '/api/clone-website', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headers(await settings()) },
-      body: JSON.stringify({ workspace: state.workspace, url, name: $('siteName').value.trim() || null }),
+    const body = JSON.stringify({
+      category: 'collection',
+      url: page.url,
+      title: $('colTitle').value.trim() || page.title || null,
+      note: $('colNote').value.trim() || null,
+      source: 'browser',
     });
-    const body = await r.json().catch(() => ({}));
-    if (r.status === 501) {
-      setSiteStatus('clone-website 处理逻辑暂未实现,计划后续实现。规划路径: ' + (body.plannedPath || '—'), 'busy');
-    } else if (!r.ok) {
-      setSiteStatus('失败: ' + (body.error || ('HTTP ' + r.status)), 'err');
-    } else {
-      setSiteStatus('已提交: ' + (body.plannedPath || url), 'ok');
-    }
+    const res = await fetchApi('/api/collect', { method: 'POST', body, headers: { 'Content-Type': 'application/json' } });
+    setColStatus(`已记录 [collection] → ${res.collected.url} (待后续处理)`, 'ok');
+    $('colTitle').value = ''; $('colNote').value = '';
+    await refreshCollectedStore();
   } catch (e) {
-    setSiteStatus('请求失败: ' + e.message, 'err');
+    setColStatus('收藏失败: ' + e.message, 'err');
   }
   btn.disabled = false;
 };
+$('colReload').onclick = () => refreshCollectedStore();
+
+// ---------- 克隆网站: 记录到 collected.json [category=clone] ----------
+$('siteGo').onclick = async () => {
+  const url = $('siteUrl').value.trim();
+  if (!/^https?:\/\/\S+$/i.test(url)) { setSiteStatus('请输入合法的 http(s) 站点地址', 'err'); return; }
+  if (!state.serverUp) { setSiteStatus('服务离线 — 请先启动后台服务', 'err'); return; }
+  const btn = $('siteGo');
+  btn.disabled = true;
+  try {
+    const page = state.currentPage;
+    const body = JSON.stringify({
+      workspace: state.workspace,
+      url,
+      name: $('siteName').value.trim() || null,
+      title: page && page.url === url ? (page.title || null) : null,
+      note: $('siteNote').value.trim() || null,
+      source: 'browser',
+    });
+    const res = await fetchApi('/api/clone-website', {
+      method: 'POST',
+      body,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    setSiteStatus(`已记录 [clone] → ${res.plannedPath || res.url} (待后续处理)`, 'ok');
+    $('siteName').value = ''; $('siteNote').value = '';
+    await refreshCollectedStore();
+  } catch (e) {
+    setSiteStatus('记录失败: ' + e.message, 'err');
+  }
+  btn.disabled = false;
+};
+$('siteReload').onclick = () => refreshCollectedStore();
 
 // ---------- clone action ----------
 function setStatus(msg, kind = 'busy') {
@@ -452,5 +548,6 @@ async function renderJobs() {
   renderServer(false, '检查服务…');
   state.repo = await detectRepo();
   renderRepo();
+  await renderPage();
   await loadAll();
 })();

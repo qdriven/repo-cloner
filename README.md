@@ -3,8 +3,8 @@
 浏览器插件 + 本地伴侣服务（Chrome / Edge，MV3）：
 
 - **GitHub clone**：在仓库页一键 clone 到 `references/<category>/<name>`，默认 `--depth=1`，最多 5 个并发，失败自动重试，有历史和进度。
-- **收藏**：把当前文章地址记到本地 `server/collected.json`（只记地址，抓取内容还没做）。
-- **克隆网站**：接口已经有了，实际下载逻辑还没写，目前返回 `501`。
+- **收藏（`collection`）**：自动识别当前页地址与标题，记入 `server/collected.json`（`category: "collection"`，`crawlStatus: "pending"`，后续统一爬取处理）。
+- **克隆网站（`clone`）**：自动识别当前页网址，记录站点信息与规划路径到 `server/collected.json`（`category: "clone"`，`crawlStatus: "pending"`，后续统一克隆处理）。
 
 零依赖，需要 Node.js ≥ 18、git、curl。
 
@@ -53,8 +53,8 @@ scripts/service.sh disable
 快捷键 `Alt+R` 打开弹窗，共四个 Tab：
 
 - **Clone**：在 GitHub 仓库页选择 workspace 和类别（读取自 `references/` 实时目录），点 Clone。目录已存在且 origin 相同时改为 `pull`。服务离线时降级为复制 `git clone` 命令。
-- **收藏**：自动带入当前页地址和标题，可以补备注；URL 去重。
-- **克隆网站**：输入地址后返回规划路径 `references/websites/<name>`，处理逻辑还没实现。
+- **收藏**：自动带入当前页地址和标题，可补备注，以 `category: "collection"` 写入 `server/collected.json`；列表支持按 `全部 / collection / clone` 筛选与删除。
+- **克隆网站**：自动识别并填入当前页网址（可手动修改），点击后以 `category: "clone"` 记录到 `server/collected.json`（含规划路径 `references/websites/<name>`，待后续克隆处理）。
 - **历史 / 进度**：显示状态、进度条、命令和错误，2 秒刷新一次；失败的任务可以重跑。
 
 ## CLI
@@ -65,12 +65,12 @@ node server/clone-it-cli.mjs list [--category X]
 node server/clone-it-cli.mjs jobs [--limit 30]
 node server/clone-it-cli.mjs retry <job-id>
 node server/clone-it-cli.mjs collect <url> [--title T] [--note N]
-node server/clone-it-cli.mjs collected
-node server/clone-it-cli.mjs clone-website <url>
+node server/clone-it-cli.mjs collected [--category collection|clone]
+node server/clone-it-cli.mjs clone-website <url> [--name N] [--title T] [--note N]
 node server/clone-it-cli.mjs server [--config FILE] [server 参数]
 ```
 
-CLI 同样读取 `cloneit.config.json` 与 `CLONEIT_*` 环境变量；未指定 `workspace` 时用当前目录。`clone` 在前台同步执行并打印进度，类别默认 `others`。CLI 和 HTTP 服务共用 `server/core.mjs`，历史记录都写在 `server/jobs.json`。
+CLI 同样读取 `cloneit.config.json` 与 `CLONEIT_*` 环境变量；未指定 `workspace` 时用当前目录。`clone` 在前台同步执行并打印进度，类别默认 `others`。CLI 和 HTTP 服务共用 `server/core.mjs`，克隆历史写在 `server/jobs.json`，收藏与待克隆网站统一写在 `server/collected.json`。
 
 ## API
 
@@ -81,8 +81,10 @@ GET  /api/registry?workspace=ws0           解析 registry_references.yaml
 GET  /api/list?workspace=&category=        类别下已有的仓库
 POST /api/clone          {workspace, category, url, name?}  → 202 入队
 GET  /api/jobs           POST /api/retry {id}
-GET  /api/collected      POST /api/collect {url, title?, note?, source?}  POST /api/collect/remove {id}
-POST /api/clone-website  {workspace, url, name?}  → 501
+GET  /api/collected[?category=collection|clone]
+POST /api/collect        {url, title?, note?, source?}      → 201 (category=collection)
+POST /api/clone-website  {workspace, url, name?, title?, note?} → 201 (category=clone)
+POST /api/collect/remove {id}
 ```
 
 ## 目录

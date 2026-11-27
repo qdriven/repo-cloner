@@ -189,14 +189,15 @@ const server = http.createServer(async (req, res) => {
       if (r.skipped) return ok(res, { job: { id: r.job.id, status: r.job.status }, skipped: true });
       return send(res, 202, { ok: true, queued: true, job: { id: r.job.id, status: r.job.status, retriedFrom: body.id } });
     }
-    // ---------- 收藏: record article addresses locally (crawl left empty) ----------
+    // ---------- 收藏 & 克隆网站记录 (统一存入 collected.json, category: collection | clone) ----------
     if (u.pathname === '/api/collected') {
-      return ok(res, { collected: listCollected(cfg) });
+      const cat = q.get('category') || q.get('type') || null;
+      return ok(res, { collected: listCollected(cfg, cat) });
     }
     if (u.pathname === '/api/collect' && req.method === 'POST') {
       let body;
       try { body = JSON.parse(await readBody(req)); } catch { return fail(res, 400, 'bad json'); }
-      const r = addCollected(cfg, body);
+      const r = addCollected(cfg, { ...body, category: body.category || body.type || 'collection' });
       if (r.code === 409) return send(res, 409, { ok: false, error: r.error, entry: r.entry });
       if (r.code !== 200) return fail(res, r.code, r.error);
       return send(res, 201, { ok: true, collected: r.entry });
@@ -208,15 +209,12 @@ const server = http.createServer(async (req, res) => {
       if (r.code !== 200) return fail(res, r.code, r.error);
       return ok(res, { removed: r.entry });
     }
-    // ---------- clone-website: placeholder (处理逻辑先留空) ----------
     if (u.pathname === '/api/clone-website' && req.method === 'POST') {
       let body;
       try { body = JSON.parse(await readBody(req)); } catch { return fail(res, 400, 'bad json'); }
       if (!isHttpUrl(body.url)) return fail(res, 400, 'url must be an http(s) address');
       const r = doCloneWebsite(cfg, body);
-      if (r.code === 501) return send(res, 501, r.body);
-      if (r.code >= 400) return fail(res, r.code, r.body.error);
-      return send(res, 200, r.body);
+      return send(res, r.code, r.body);
     }
     return fail(res, 404, 'not found: ' + u.pathname);
   } catch (e) {

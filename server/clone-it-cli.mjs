@@ -223,45 +223,55 @@ async function cmdServer(pos, opts) {
   child.on('close', (code) => process.exit(code ?? 0));
 }
 
-// ---------- collect (收藏: record article address, crawl left empty) ----------
+// ---------- collect / clone-website (统一存入 collected.json, category: collection | clone) ----------
 function cmdCollect(pos, opts) {
   const url = pos[0];
   if (!url) { err('usage: collect <url> [--title T] [--note N] [--source S]'); process.exit(2); }
   const cfg = buildCfg(opts);
-  const r = addCollected(cfg, { url, title: opts.title, note: opts.note, source: opts.source });
+  const r = addCollected(cfg, { category: 'collection', url, title: opts.title, note: opts.note, source: opts.source || 'cli' });
   if (r.code === 409) { out('已收藏过: ' + url); return; }
   if (r.code !== 200) { err('error: ' + r.error); process.exit(r.code); }
-  out('已收藏: ' + r.entry.url);
+  out('已收藏 [collection]: ' + r.entry.url);
   out('  id:        ' + r.entry.id);
-  if (r.entry.title) out('  title:    ' + r.entry.title);
-  out('  crawl:     ' + r.entry.crawlStatus + ' (爬取任务暂未实现)');
+  if (r.entry.title) out('  title:     ' + r.entry.title);
+  out('  crawl:     ' + r.entry.crawlStatus + ' (待后续处理)');
 }
 
 function cmdCollected(pos, opts) {
   const cfg = buildCfg(opts);
-  const list = listCollected(cfg);
-  if (!list.length) { out('暂无收藏记录'); return; }
-  out(`收藏记录 (${list.length}):`);
+  const list = listCollected(cfg, opts.category || null);
+  if (!list.length) { out('暂无记录'); return; }
+  out(`collected.json 记录 (${list.length}):`);
   for (const c of list) {
-    const t = c.title ? '  ' + c.title : '';
-    out(`  ${c.id}  ${c.url}${t}`);
+    const t = c.title ? '  ' + c.title : (c.name ? '  ' + c.name : '');
+    const p = c.plannedPath ? `  → ${c.plannedPath}` : '';
+    out(`  [${c.category}] ${c.id}  ${c.url}${t}${p}`);
   }
 }
 
-// ---------- clone-website (处理逻辑先留空, 计划后续实现) ----------
 function cmdCloneWebsite(pos, opts) {
   const url = pos[0];
-  if (!url) { err('usage: clone-website <url> [--name N] [--workspace-id ws0]'); process.exit(2); }
+  if (!url) { err('usage: clone-website <url> [--name N] [--title T] [--note N] [--workspace-id ws0]'); process.exit(2); }
   const cfg = buildCfg(opts);
-  const r = doCloneWebsite(cfg, { workspace: opts.workspaceId || cfg.workspaces[0].id, url, name: opts.name });
-  if (r.code === 501) {
-    out('clone-website 暂未实现 (计划后续实现)');
-    out('  url:       ' + r.body.url);
-    out('  planned:   ' + r.body.plannedPath);
-    process.exit(0);
+  const r = doCloneWebsite(cfg, {
+    workspace: opts.workspaceId || cfg.workspaces[0].id,
+    url,
+    name: opts.name,
+    title: opts.title,
+    note: opts.note,
+    source: opts.source || 'cli',
+  });
+  if (r.code === 409) {
+    out('已记录过 [clone]: ' + r.body.entry.url);
+    out('  id:        ' + r.body.entry.id);
+    out('  planned:   ' + (r.body.plannedPath || '—'));
+    return;
   }
   if (r.code >= 400) { err('error: ' + r.body.error); process.exit(r.code); }
-  out('ok: ' + r.body.plannedPath);
+  out('已记录 [clone]: ' + r.body.url);
+  out('  id:        ' + r.body.entry.id);
+  out('  planned:   ' + r.body.plannedPath);
+  out('  crawl:     ' + r.body.entry.crawlStatus + ' (克隆逻辑待后续处理)');
 }
 
 // ---------- dispatch ----------
