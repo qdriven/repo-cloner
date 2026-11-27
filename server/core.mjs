@@ -21,6 +21,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const VERSION = '0.3.0';
 export const DEFAULT_PORT = 7420;
+export const DEFAULT_CONFIG_FILE = path.resolve(__dirname, '..', 'cloneit.config.json');
 export const ORIGIN_ALLOW = new Set([
   'chrome-extension://',
   'moz-extension://',
@@ -29,20 +30,87 @@ export const ORIGIN_ALLOW = new Set([
 // Request token header used when --token is set.
 export const TOKEN_HEADER = 'x-cloneit-token';
 
-// ---------- config ----------
-export function parseConfig(argv) {
-  const argVal = (name) => {
-    const i = argv.indexOf(name);
-    return i >= 0 ? argv[i + 1] : undefined;
-  };
-  const flags = new Set(argv.filter((a) => a.startsWith('--') && !argVal(a)));
+const BOOL_FLAGS = new Set(['--watch-clipboard', '--no-pull', '--full']);
 
-  const wsArgs = [];
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--workspace' && argv[i + 1]) wsArgs.push(argv[i + 1]);
+function expandHome(p) {
+  if (typeof p !== 'string') return p;
+  if (p === '~') return os.homedir();
+  if (p.startsWith('~/') || p.startsWith('~\\')) return path.join(os.homedir(), p.slice(2));
+  return p;
+}
+
+function parseBool(v) {
+  if (typeof v === 'boolean') return v;
+  if (typeof v === 'number') return v !== 0;
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase();
+    if (s === '1' || s === 'true' || s === 'yes' || s === 'on') return true;
+    if (s === '0' || s === 'false' || s === 'no' || s === 'off') return false;
   }
+  return undefined;
+}
 
-  const WORKSPACES = (wsArgs.length ? wsArgs : [process.cwd()]).map((dir, i) => {
+function parseNum(v) {
+  if (v === undefined || v === null || v === '') return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function pickStr(...vals) {
+  for (const v of vals) {
+    if (typeof v === 'string' && v.trim() !== '') return v.trim();
+  }
+  return null;
+}
+
+export function loadConfigFile(configPath, required = false) {
+  if (!fs.existsSync(configPath)) {
+    if (required) throw new Error(`config file not found: ${configPath}`);
+    return { data: {}, loaded: null };
+  }
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch (e) {
+    throw new Error(`invalid JSON in ${configPath}: ${e.message}`);
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error(`config root must be a JSON object: ${configPath}`);
+  }
+  return { data: raw, loaded: configPath };
+}
+
+// ---------- config (precedence: CLI > env CLONEIT_* > cloneit.config.json > default) ----------
+export function parseConfig(argv = [], env = process.env) {
+  const argVal = (name) => {
+    const i = argv.lastIndexOf(name);
+    return i >= 0 && i + 1 < argv.length ? argv[i + 1] : undefined;
+  };
+  const flags = new Set(argv.filter((a) => BOOL_FLAGS.has(a)));
+
+  const explicitCfg = pickStr(argVal('--config'), env.CLONEIT_CONFIG);
+  const cfgPath = explicitCfg ? path.resolve(expandHome(explicitCfg)) : DEFAULT_CONFIG_FILE;
+  const { data: fileCfg, loaded: loadedConfigFile } = loadConfigFile(cfgPath, Boolean(explicitCfg));
+  const cfgDir = path.dirname(cfgPath);
+
+  const cliWs = [];
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--workspace' && argv[i + 1]) cliWs.push(path.resolve(expandHome(argv[++i])));
+  }
+  const envWs = typeof env.CLONEIT_WORKSPACE === 'string' && env.CLONEIT_WORKSPACE.trim()
+    ? env.CLONEIT_WORKSPACE.split(path.delimiter).map((s) => s.trim()).filter(Boolean).map((d) => path.resolve(expandHome(d)))
+    : [];
+  const rawCfgWs = Array.isArray(fileCfg.workspaces) ? fileCfg.workspaces
+    : Array.isArray(fileCfg.workspace) ? fileCfg.workspace
+    : typeof fileCfg.workspace === 'string' && fileCfg.workspace.trim() ? [fileCfg.workspace.trim()]
+    : [];
+  const cfgWs = rawCfgWs
+    .filter((d) => typeof d === 'string' && d.trim())
+    .map((d) => path.resolve(cfgDir, expandHome(d.trim())));
+
+  const explicitDirs = cliWs.length ? cliWs : envWs.length ? envWs : cfgWs;
+  const workspaceExplicit = explicitDirs.length > 0;
+  const WORKSPACES = (workspaceExplicit ? explicitDirs : [process.cwd()]).map((dir, i) => {
     const abs = path.resolve(dir);
     const name = path.basename(abs) || 'ws' + i;
     return { id: 'ws' + i, name, dir: abs };
@@ -50,17 +118,20 @@ export function parseConfig(argv) {
 
   return {
     argv,
-    port: Number(argVal('--port')) || DEFAULT_PORT,
-    token: argVal('--token') || null,
-    watchClipboard: flags.has('--watch-clipboard'),
-    noPull: flags.has('--no-pull'),
-    full: flags.has('--full'),
-    cloneTimeout: Number(argVal('--clone-timeout')) || 0,
-    mirror: argVal('--mirror') || null,
-    proxy: argVal('--proxy') || null,
-    retry: Number(argVal('--retry')) || 3,
+    loadedConfigFile,
+    workspaceExplicit,
+    port: parseNum(argVal('--port')) ?? parseNum(env.CLONEIT_PORT) ?? parseNum(fileCfg.port) ?? DEFAULT_PORT,
+    token: pickStr(argVal('--token'), env.CLONEIT_TOKEN, fileCfg.token),
+    browser: pickStr(argVal('--browser'), env.CLONEIT_BROWSER, fileCfg.browser),
+    watchClipboard: flags.has('--watch-clipboard') ? true : (parseBool(env.CLONEIT_WATCH_CLIPBOARD) ?? parseBool(fileCfg.watchClipboard) ?? false),
+    noPull: flags.has('--no-pull') ? true : (parseBool(env.CLONEIT_NO_PULL) ?? parseBool(fileCfg.noPull) ?? false),
+    full: flags.has('--full') ? true : (parseBool(env.CLONEIT_FULL) ?? parseBool(fileCfg.full) ?? false),
+    cloneTimeout: parseNum(argVal('--clone-timeout')) ?? parseNum(env.CLONEIT_CLONE_TIMEOUT) ?? parseNum(fileCfg.cloneTimeout) ?? 0,
+    mirror: pickStr(argVal('--mirror'), env.CLONEIT_MIRROR, fileCfg.mirror),
+    proxy: pickStr(argVal('--proxy'), env.CLONEIT_PROXY, fileCfg.proxy),
+    retry: Math.max(1, parseNum(argVal('--retry')) ?? parseNum(env.CLONEIT_RETRY) ?? parseNum(fileCfg.retry) ?? 3),
     // max concurrent clone jobs; default 5 (user requirement: at most 5 in parallel)
-    maxConcurrent: Math.max(1, Number(argVal('--max-concurrent')) || 5),
+    maxConcurrent: Math.max(1, parseNum(argVal('--max-concurrent')) ?? parseNum(env.CLONEIT_MAX_CONCURRENT) ?? parseNum(fileCfg.maxConcurrent) ?? 5),
     workspaces: WORKSPACES,
     jobsFile: path.join(__dirname, 'jobs.json'),
   };

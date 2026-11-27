@@ -1,0 +1,14 @@
+{
+  "workspace": "",
+  "port": 7420,
+  "token": "",
+  "browser": "",
+  "mirror": "",
+  "proxy": "",
+  "maxConcurrent": 5,
+  "retry": 3,
+  "full": false,
+  "noPull": false,
+  "cloneTimeout": 0,
+  "watchClipboard": false
+}

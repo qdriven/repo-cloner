@@ -38,6 +38,7 @@ function parseArgs(tokens) {
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
     if (t === '--workspace') { (opts.workspaces ||= []).push(tokens[++i]); }
+    else if (t === '--config') opts.config = tokens[++i];
     else if (t === '--full') opts.full = true;
     else if (t === '--no-pull') opts.noPull = true;
     else if (t === '--retry') opts.retry = Number(tokens[++i]);
@@ -46,6 +47,7 @@ function parseArgs(tokens) {
     else if (t === '--port') opts.port = Number(tokens[++i]);
     else if (t === '--token') opts.token = tokens[++i];
     else if (t === '--watch-clipboard') opts.watchClipboard = true;
+    else if (t === '--clone-timeout') opts.cloneTimeout = Number(tokens[++i]);
     else if (t === '--category') opts.category = tokens[++i];
     else if (t === '--name') opts.name = tokens[++i];
     else if (t === '--workspace-id') opts.workspaceId = tokens[++i];
@@ -62,6 +64,7 @@ function parseArgs(tokens) {
 function buildCfg(opts) {
   // base config from opts; default workspace = cwd
   const argv = [];
+  if (opts.config) argv.push('--config', opts.config);
   for (const w of opts.workspaces || []) argv.push('--workspace', w);
   if (opts.full) argv.push('--full');
   if (opts.noPull) argv.push('--no-pull');
@@ -71,8 +74,14 @@ function buildCfg(opts) {
   if (opts.port != null) argv.push('--port', String(opts.port));
   if (opts.token) argv.push('--token', opts.token);
   if (opts.watchClipboard) argv.push('--watch-clipboard');
+  if (opts.cloneTimeout != null) argv.push('--clone-timeout', String(opts.cloneTimeout));
   if (opts.maxConcurrent != null) argv.push('--max-concurrent', String(opts.maxConcurrent));
-  return parseConfig(argv);
+  try {
+    return parseConfig(argv);
+  } catch (e) {
+    err('config error: ' + e.message);
+    process.exit(1);
+  }
 }
 
 function fmtProgress(p) {
@@ -198,6 +207,7 @@ async function cmdServer(pos, opts) {
   const serverFile = new URL('./clone-it-server.mjs', import.meta.url).pathname;
   const { spawn } = await import('node:child_process');
   const argv = [];
+  if (opts.config) argv.push('--config', opts.config);
   for (const w of opts.workspaces || []) argv.push('--workspace', w);
   if (opts.full) argv.push('--full');
   if (opts.noPull) argv.push('--no-pull');
@@ -207,6 +217,7 @@ async function cmdServer(pos, opts) {
   if (opts.port != null) argv.push('--port', String(opts.port));
   if (opts.token) argv.push('--token', opts.token);
   if (opts.watchClipboard) argv.push('--watch-clipboard');
+  if (opts.cloneTimeout != null) argv.push('--clone-timeout', String(opts.cloneTimeout));
   if (opts.maxConcurrent != null) argv.push('--max-concurrent', String(opts.maxConcurrent));
   const child = spawn(process.execPath, [serverFile, ...argv], { stdio: 'inherit' });
   child.on('close', (code) => process.exit(code ?? 0));

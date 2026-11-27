@@ -1,2 +1,4 @@
 server/jobs.json
 server/collected.json
+cloneit.config.json
+.run/

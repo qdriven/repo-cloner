@@ -48,7 +48,13 @@ import {
 } from './core.mjs';
 
 const argv = process.argv.slice(2);
-const cfg = parseConfig(argv);
+let cfg;
+try {
+  cfg = parseConfig(argv);
+} catch (e) {
+  console.error('[cloneit] config error:', e.message);
+  process.exit(1);
+}
 const core = new CloneItCore(cfg);
 
 // ---------- helpers ----------
@@ -225,6 +231,7 @@ server.on('error', (e) => {
 
 server.listen(cfg.port, '127.0.0.1', () => {
   console.log(`[cloneit] v${VERSION} listening on http://127.0.0.1:${cfg.port}`);
+  if (cfg.loadedConfigFile) console.log(`[cloneit]   config: ${cfg.loadedConfigFile}`);
   for (const w of cfg.workspaces) console.log(`[cloneit]   workspace ${w.id}: ${w.dir}`);
   if (cfg.token) console.log('[cloneit]   token auth enabled');
   if (cfg.watchClipboard) console.log('[cloneit]   clipboard sentinel watching (CLONEIT://clone?...)');
