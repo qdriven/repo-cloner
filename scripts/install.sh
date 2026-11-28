@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# CloneIt 一键安装: 检查依赖 → 启动后台服务 → 引导安装浏览器插件
-# 配置优先级: 命令行参数 > 环境变量 (CLONEIT_*) > 配置文件 (cloneit.config.json) > 默认值
+# KeepIt 一键安装: 检查依赖 → 启动后台服务 → 引导安装浏览器插件
+# 配置优先级: 命令行参数 > 环境变量 (KEEPIT_*) > 配置文件 (keepit.config.json) > 默认值
 #
 #   scripts/install.sh                        后台启动服务 (nohup)
 #   scripts/install.sh --autostart            改用 launchd 开机自启 (macOS)
@@ -37,9 +37,9 @@ command -v curl >/dev/null || { echo "缺少 curl" >&2; exit 1; }
 echo "    node $(node -v), $(git --version)"
 
 # 复用 server/core.mjs 解析最终生效的 port / browser / token
-resolved="$(CLONEIT_CORE="$REPO/server/core.mjs" node --input-type=module -e '
+resolved="$(KEEPIT_CORE="$REPO/server/core.mjs" node --input-type=module -e '
   import { pathToFileURL } from "node:url";
-  const { parseConfig } = await import(pathToFileURL(process.env.CLONEIT_CORE).href);
+  const { parseConfig } = await import(pathToFileURL(process.env.KEEPIT_CORE).href);
   let c;
   try { c = parseConfig(process.argv.slice(1)); }
   catch (e) { console.error("error: " + e.message); process.exit(1); }

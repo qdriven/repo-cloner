@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>KeepIt — 产品介绍与实操演示</title>
+<style>
+:root {
+  --bg: #07110c;
+  --bg-2: #0d1d15;
+  --card: #10241a;
+  --card-2: #142d21;
+  --line: rgba(52, 211, 153, 0.18);
+  --line-strong: rgba(52, 211, 153, 0.42);
+  --ink: #ecfdf5;
+  --ink-2: #a7cbb9;
+  --ink-3: #6b907e;
+  --accent: #10b981;
+  --accent-bright: #34d399;
+  --accent-soft: rgba(16, 185, 129, 0.16);
+  --amber: #fbbf24;
+  --rose: #f87171;
+  --sky: #38bdf8;
+  --sans: 'PingFang SC', 'Hiragino Sans GB', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'SF Mono', 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #040a07; color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+#viewport {
+  position: fixed; inset: 0;
+  display: grid; place-items: center;
+}
+#stage {
+  width: 1920px; height: 1080px;
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(900px 520px at 88% 12%, rgba(16, 185, 129, 0.14), transparent 70%),
+    radial-gradient(700px 480px at 10% 90%, rgba(56, 189, 248, 0.08), transparent 70%),
+    linear-gradient(180deg, #07120d 0%, #091710 100%);
+  transform-origin: center center;
+}
+.grid-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(52,211,153,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52,211,153,0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Top bar */
+.topbar {
+  position: absolute; top: 44px; left: 96px; right: 96px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 5;
+}
+.brand {
+  display: flex; align-items: center; gap: 14px;
+}
+.brand-logo {
+  width: 40px; height: 40px; border-radius: 11px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 21px; color: #fff;
+  box-shadow: 0 4px 18px rgba(16,185,129,0.4);
+}
+.brand-text { font-size: 22px; font-weight: 700; letter-spacing: 0.4px; color: var(--ink); }
+.brand-sub { font-size: 16px; color: var(--ink-3); font-family: var(--mono); margin-left: 8px; }
+.slide-tag {
+  padding: 7px 18px; border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(16, 36, 26, 0.75);
+  color: var(--accent-bright); font-family: var(--mono); font-size: 16px; font-weight: 600;
+}
+
+/* Slide containers */
+.slide {
+  position: absolute; inset: 0;
+  padding: 122px 96px 132px;
+  display: none; flex-direction: column; justify-content: space-between;
+}
+.slide.active { display: flex; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--accent-bright); font-family: var(--mono);
+  font-size: 18px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+  margin-bottom: 14px;
+}
+h1.hero {
+  font-size: 82px; font-weight: 800; line-height: 1.12; letter-spacing: -1px;
+}
+h1.hero .hl {
+  background: linear-gradient(90deg, #34d399, #6ee7b7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+h2.stitle {
+  font-size: 52px; font-weight: 800; line-height: 1.16; margin-bottom: 10px;
+}
+p.lead {
+  font-size: 27px; color: var(--ink-2); line-height: 1.5; max-width: 1380px;
+}
+
+.row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.panel {
+  background: linear-gradient(180deg, rgba(20,45,33,0.9), rgba(13,29,21,0.92));
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 30px 32px;
+  position: relative;
+}
+.panel.accent {
+  border-color: var(--line-strong);
+  box-shadow: 0 12px 40px rgba(16,185,129,0.12);
+}
+.panel h3 {
+  font-size: 28px; font-weight: 700; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+.panel p, .panel li {
+  font-size: 22px; color: var(--ink-2); line-height: 1.55;
+}
+.panel ul { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.panel li::before {
+  content: '▸'; color: var(--accent-bright); margin-right: 10px; font-weight: 700;
+}
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 4px 13px; border-radius: 999px;
+  font-family: var(--mono); font-size: 16px; font-weight: 600;
+  background: var(--accent-soft); color: var(--accent-bright);
+  border: 1px solid rgba(52,211,153,0.3);
+}
+.badge.warn { background: rgba(251,191,36,0.14); color: var(--amber); border-color: rgba(251,191,36,0.3); }
+.badge.danger { background: rgba(248,113,113,0.14); color: var(--rose); border-color: rgba(248,113,113,0.3); }
+.badge.sky { background: rgba(56,189,248,0.14); color: var(--sky); border-color: rgba(56,189,248,0.3); }
+.mono { font-family: var(--mono); }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.kpi {
+  background: rgba(16,36,26,0.85); border: 1px solid var(--line);
+  border-radius: 20px; padding: 24px 28px;
+}
+.kpi .num {
+  font-size: 56px; font-weight: 800; font-family: var(--mono);
+  color: var(--accent-bright); line-height: 1.05;
+}
+.kpi .lbl { font-size: 20px; color: var(--ink-2); margin-top: 8px; font-weight: 600; }
+.kpi .sub { font-size: 16px; color: var(--ink-3); margin-top: 4px; font-family: var(--mono); }
+
+/* Architecture diagram */
+.arch-flow {
+  display: grid; grid-template-columns: 1.05fr 80px 1.15fr 80px 1.25fr;
+  align-items: stretch; gap: 0; margin-top: 12px; flex: 1; max-height: 540px;
+}
+.arch-arrow {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--accent-bright); font-family: var(--mono); font-size: 16px; gap: 8px;
+}
+.arch-arrow .arr { font-size: 38px; line-height: 1; }
+.code-pill {
+  display: inline-block; padding: 3px 10px; border-radius: 7px;
+  background: rgba(0,0,0,0.36); border: 1px solid rgba(255,255,255,0.09);
+  font-family: var(--mono); font-size: 18px; color: #d1fae5;
+}
+
+/* ===== Terminal Window for Demo 1 ===== */
+.term-win {
+  background: #090e0c; border: 1px solid rgba(52,211,153,0.32);
+  border-radius: 18px; overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; height: 640px;
+}
+.term-bar {
+  height: 44px; background: #111b16; border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; padding: 0 18px; gap: 9px;
+}
+.dot-r, .dot-y, .dot-g { width: 13px; height: 13px; border-radius: 50%; }
+.dot-r { background: #ef4444; } .dot-y { background: #f59e0b; } .dot-g { background: #10b981; }
+.term-title { margin-left: 12px; font-family: var(--mono); font-size: 15px; color: var(--ink-3); }
+.term-body {
+  padding: 24px 28px; font-family: var(--mono); font-size: 19px; line-height: 1.62;
+  color: #e2f5ec; white-space: pre-wrap; flex: 1; overflow: hidden;
+}
+.t-prompt { color: #34d399; font-weight: 700; }
+.t-cmd { color: #f8fafc; font-weight: 600; }
+.t-dim { color: #7fa190; }
+.t-ok { color: #34d399; font-weight: 600; }
+.t-hi { color: #fbbf24; }
+.t-cursor {
+  display: inline-block; width: 10px; height: 22px; background: #34d399;
+  vertical-align: -4px; margin-left: 2px;
+}
+
+/* ===== Browser + KeepIt Authentic Popup Mockup for Demo 2 & 3 ===== */
+.browser-stage {
+  position: relative; background: #0d1612; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px; overflow: hidden; height: 650px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+}
+.b-chrome {
+  height: 54px; background: #18241e; border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; padding: 0 18px; gap: 12px;
+}
+.b-url {
+  flex: 1; height: 34px; background: #0c1410; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px; padding: 0 16px; display: flex; align-items: center;
+  font-family: var(--mono); font-size: 16px; color: #cbd5e1;
+}
+.b-ext-btn {
+  width: 34px; height: 34px; border-radius: 9px; background: #10b981;
+  color: #fff; font-weight: 800; font-size: 16px; display: grid; place-items: center;
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.28);
+}
+.b-page {
+  padding: 36px 44px; color: #cbd5e1;
+}
+.gh-header { font-size: 28px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 12px; }
+.gh-desc { font-size: 20px; color: #94a3b8; margin-top: 12px; max-width: 560px; line-height: 1.5; }
+.gh-files {
+  margin-top: 26px; width: 540px; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; overflow: hidden; background: rgba(255,255,255,0.02);
+}
+.gh-row {
+  padding: 11px 18px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-family: var(--mono); font-size: 16px; color: #94a3b8; display: flex; justify-content: space-between;
+}
+
+/* Authentic KeepIt Popup replica */
+.ci-popup {
+  position: absolute; top: 64px; right: 26px; width: 470px;
+  background: #f4faf6; color: #12271b; border-radius: 16px;
+  border: 1px solid #bcded0;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.65), 0 0 0 1px rgba(16,185,129,0.25);
+  overflow: hidden; font-size: 15px;
+}
+.ci-head {
+  display: flex; align-items: center; gap: 10px; padding: 13px 16px;
+  background: linear-gradient(180deg, #ecfdf5, #f4faf6);
+  border-bottom: 1px solid #dcefe4;
+}
+.ci-logo {
+  width: 26px; height: 26px; border-radius: 7px; background: #10b981;
+  color: #fff; font-weight: 800; font-size: 14px; display: grid; place-items: center;
+}
+.ci-title { font-weight: 700; font-size: 16px; color: #12271b; }
+.ci-ws {
+  margin-left: auto; border: 1px solid #dcefe4; background: #fff;
+  border-radius: 8px; padding: 4px 10px; font-size: 14px; font-weight: 600; color: #12271b;
+}
+.ci-tabs {
+  display: flex; background: #fff; border-bottom: 1px solid #dcefe4; padding: 0 12px;
+}
+.ci-tab {
+  flex: 1; text-align: center; padding: 10px 0; font-weight: 700; font-size: 14px;
+  color: #7d8f84; border-bottom: 3px solid transparent;
+}
+.ci-tab.on { color: #065f46; border-bottom-color: #10b981; }
+.ci-body { padding: 14px 16px; min-height: 390px; }
+.ci-card {
+  background: #fff; border: 1px solid #dcefe4; border-radius: 11px;
+  padding: 11px 14px; margin-bottom: 11px;
+}
+.ci-card-title { font-weight: 700; font-size: 15px; color: #12271b; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ci-card-sub { font-size: 13px; color: #4a5d51; font-family: var(--mono); margin-top: 4px; word-break: break-all; }
+.ci-lbl { font-size: 12px; font-weight: 700; color: #7d8f84; text-transform: uppercase; margin: 9px 0 6px; display: block; }
+.ci-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.ci-chip {
+  font-family: var(--mono); font-size: 14px; padding: 6px 13px; border-radius: 9px;
+  background: #fff; border: 1px solid #dcefe4; color: #4a5d51; font-weight: 600;
+}
+.ci-chip.on { background: #10b981; border-color: #10b981; color: #fff; box-shadow: 0 2px 8px rgba(16,185,129,0.35); }
+.ci-input {
+  width: 100%; background: #fff; border: 1px solid #dcefe4; border-radius: 9px;
+  padding: 8px 11px; font-family: var(--mono); font-size: 13.5px; color: #12271b;
+}
+.ci-input.placeholder { color: #7d8f84; }
+.ci-actions { display: flex; gap: 9px; margin-top: 12px; }
+.ci-btn {
+  flex: 1; background: #10b981; color: #fff; font-weight: 700; font-size: 15px;
+  padding: 10px 0; border-radius: 10px; text-align: center;
+}
+.ci-btn.disabled { background: #9fd8c4; }
+.ci-btn-ghost {
+  padding: 10px 14px; border: 1px solid #dcefe4; border-radius: 10px;
+  color: #4a5d51; font-size: 13.5px; background: #fff; font-weight: 600;
+}
+.ci-status {
+  margin-top: 10px; padding: 9px 12px; border-radius: 9px;
+  font-size: 13px; font-weight: 600;
+  background: #d1fae5; color: #065f46;
+}
+.ci-job {
+  background: #fff; border: 1px solid #dcefe4; border-radius: 10px;
+  padding: 9px 12px; margin-bottom: 8px;
+}
+.ci-bar-bg { height: 7px; background: #eef2f0; border-radius: 999px; overflow: hidden; margin: 6px 0 4px; }
+.ci-bar-fill { height: 100%; background: #10b981; border-radius: 999px; }
+.ci-pill {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  background: #d1fae5; color: #065f46;
+}
+.ci-pill.gray { background: #eef2f0; color: #4a5d51; }
+.ci-foot {
+  padding: 8px 16px; background: #fff; border-top: 1px solid #dcefe4;
+  display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #7d8f84;
+}
+.ci-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 5px #10b981; }
+
+/* Animated pointer + click pulse */
+.demo-cursor {
+  position: absolute; width: 28px; height: 28px; pointer-events: none; z-index: 30;
+  transform: translate(-4px, -2px);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+}
+.click-ring {
+  position: absolute; width: 44px; height: 44px; border-radius: 50%;
+  border: 3px solid #10b981; pointer-events: none; z-index: 29;
+  transform: translate(-50%, -50%) scale(0.2); opacity: 0;
+}
+
+/* Subtitle overlay & global progress */
+#subtitle-wrap {
+  position: absolute; left: 120px; right: 120px; bottom: 42px;
+  display: flex; justify-content: center; pointer-events: none; z-index: 40;
+}
+#subtitle-box {
+  background: rgba(5, 13, 9, 0.86);
+  border: 1px solid rgba(52, 211, 153, 0.32);
+  padding: 13px 32px; border-radius: 16px;
+  font-size: 27px; font-weight: 600; color: #f8fafc;
+  letter-spacing: 0.3px; text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+#subtitle-box:empty { display: none; }
+#global-bar {
+  position: absolute; left: 0; bottom: 0; height: 6px;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  width: 0%; z-index: 50;
+}
+
+/* Interactive controls (hidden during video capture) */
+#deck-controls {
+  position: fixed; right: 20px; bottom: 18px; z-index: 100;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(10, 24, 17, 0.9); border: 1px solid var(--line);
+  padding: 7px 14px; border-radius: 999px; font-family: var(--mono); font-size: 13px;
+}
+#deck-controls button {
+  background: rgba(16,185,129,0.18); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 999px; padding: 4px 11px; cursor: pointer; font: inherit;
+}
+#deck-controls button:hover { background: var(--accent); color: #fff; }
+body.capture-mode #deck-controls { display: none !important; }
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <div class="grid-bg"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo">C</div>
+        <span class="brand-text">KeepIt</span>
+        <span class="brand-sub">v0.3 · MV3 Extension + Local Companion</span>
+      </div>
+      <div class="slide-tag" id="topTag">01 / 08 · OVERVIEW</div>
+    </header>
+
+    <!-- ==================== SLIDE 01: COVER ==================== -->
+    <section class="slide active" data-id="01-cover" data-tag="01 / 08 · OVERVIEW">
+      <div style="margin-top: 28px">
+        <div class="eyebrow">BROWSER TO LOCAL KNOWLEDGE BASE · 零依赖本地伴侣</div>
+        <h1 class="hero">把逛到的仓库、好文与网站<br/><span class="hl">一次点击，收进本地知识库</span></h1>
+        <p class="lead" style="margin-top: 26px">
+          从浏览器页面直达本地 <span class="code-pill">references/</span> 与 <span class="code-pill">collected.json</span> ——
+          默认浅克隆、5 路并发队列、自动识别当前网址，让外部参考资料立即可被本地 AI Agent 检索与复用。
+        </p>
+      </div>
+
+      <div class="row-3">
+        <div class="panel accent">
+          <h3><span class="badge">01</span> GitHub 一键克隆</h3>
+          <p>自动解析当前 GitHub 仓库页，点选分类即入队 <span class="mono">--depth=1</span> 浅克隆，最多 5 并发 + 失败退避重试。</p>
+        </div>
+        <div class="panel">
+          <h3><span class="badge sky">02</span> 稍后读 · collection</h3>
+          <p>任意文章页 / X 推文自动带入标题与 URL，一键以 <span class="mono">category: "collection"</span> 落盘去重。</p>
+        </div>
+        <div class="panel">
+          <h3><span class="badge warn">03</span> 克隆网站 · clone</h3>
+          <p>自动识别当前站点网址与目录名，以 <span class="mono">category: "clone"</span> 记录规划路径，留待后续统一离线化。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 02: WHY & PAIN POINTS ==================== -->
+    <section class="slide" data-id="02-why" data-tag="02 / 08 · WHY WE BUILT IT">
+      <div>
+        <div class="eyebrow">WHY · 为什么要做这个项目</div>
+        <h2 class="stitle">日常收集外部参考资料，原本被割裂成三条高摩擦链路</h2>
+        <p class="lead">每次从浏览器切去终端或顺手塞进书签栏，要么打断阅读心流，要么让资料永远停留在浏览器里吃灰。</p>
+      </div>
+
+      <div class="row-3" style="flex:1; max-height: 500px; margin-top: 16px">
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <span class="badge danger">痛点 01 · 仓库克隆</span>
+            <span class="mono" style="color:var(--rose);font-size:20px;font-weight:700">6 步 / ~60s</span>
+          </div>
+          <h3>手敲终端，慢网易断</h3>
+          <ul>
+            <li>复制 GitHub URL → 切终端 → <span class="mono">cd references/…</span></li>
+            <li>纠结放进 <span class="mono">skills</span> 还是 <span class="mono">others</span> 子目录</li>
+            <li>忘了加 <span class="mono">--depth=1</span>，大仓拉取漫长占空间</li>
+            <li>国内网络偶发超时，中断后还得手动清理重敲</li>
+          </ul>
+        </div>
+
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <span class="badge warn">痛点 02 · 好文与推文</span>
+            <span class="mono" style="color:var(--amber);font-size:20px;font-weight:700">书签即吃灰</span>
+          </div>
+          <h3>散落浏览器，Agent 不可见</h3>
+          <ul>
+            <li>刷到高质量技术推文或博客，收藏进浏览器书签</li>
+            <li>本地 Cursor / Claude Agent 无法读取书签上下文</li>
+            <li>缺少备注、来源时间戳与待抓取状态追踪</li>
+          </ul>
+        </div>
+
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <span class="badge sky">痛点 03 · 在线工具站</span>
+            <span class="mono" style="color:var(--sky);font-size:20px;font-weight:700">缺少收口</span>
+          </div>
+          <h3>想整站参考，无处登记</h3>
+          <ul>
+            <li>看到交互惊艳的在线工具站或文档站想离线复刻</li>
+            <li>和普通文章混在一起，分不清「读内容」还是「扒整站」</li>
+            <li>缺少统一的本地目标目录规划（<span class="mono">references/websites/</span>）</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 03: ARCHITECTURE ==================== -->
+    <section class="slide" data-id="03-architecture" data-tag="03 / 08 · ARCHITECTURE">
+      <div>
+        <div class="eyebrow">HOW IT WORKS · 解决了什么问题</div>
+        <h2 class="stitle">前端极简投递 + 单核本地守护服务 + 双通道结构化落盘</h2>
+      </div>
+
+      <div class="arch-flow">
+        <div class="panel">
+          <span class="badge">入口层 · MV3 Extension & CLI</span>
+          <h3 style="margin-top:14px">自动感知上下文</h3>
+          <ul>
+            <li><strong>GitHub 页</strong>：自动解析 <span class="mono">owner/repo</span></li>
+            <li><strong>任意网页</strong>：自动提取 <span class="mono">title + url</span></li>
+            <li>快捷键 <span class="code-pill">Alt+R</span> 呼出四合一面板</li>
+            <li>服务离线自动降级为复制 <span class="mono">git clone</span> 命令</li>
+            <li>AI 助手可直接调用 <span class="code-pill">keepit-cli.mjs</span></li>
+          </ul>
+        </div>
+
+        <div class="arch-arrow">
+          <span>HTTP</span>
+          <span class="arr">⟶</span>
+          <span>:7420</span>
+        </div>
+
+        <div class="panel accent">
+          <span class="badge">核心层 · server/core.mjs (0 依赖)</span>
+          <h3 style="margin-top:14px">一套内核，三端复用</h3>
+          <ul>
+            <li>HTTP 服务、CLI、运维脚本共用同一套解析与队列</li>
+            <li>配置优先级：<span class="mono">CLI &gt; KEEPIT_* &gt; JSON</span></li>
+            <li>有界并发泵：最多 <strong>5 路</strong> git 进程并行</li>
+            <li>自动恢复损坏锁文件 + 2s/4s 指数退避重试</li>
+            <li>安全护栏：仅绑 <span class="mono">127.0.0.1</span> + 防路径穿越</li>
+          </ul>
+        </div>
+
+        <div class="arch-arrow">
+          <span>落盘</span>
+          <span class="arr">⟶</span>
+          <span>本地仓</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <div class="panel" style="flex:1">
+            <span class="badge">通道 A · 代码参考仓</span>
+            <h3 style="margin-top:8px">references/&lt;category&gt;/&lt;repo&gt;</h3>
+            <p style="font-size:20px">默认 <span class="mono">--depth=1</span>，同源已存在则自动 <span class="mono">pull --ff-only</span>；全量历史持久化至 <span class="mono">server/jobs.json</span>。</p>
+          </div>
+          <div class="panel" style="flex:1">
+            <span class="badge sky">通道 B · server/collected.json</span>
+            <h3 style="margin-top:8px">按 category 区分两类待办</h3>
+            <p style="font-size:20px"><span class="mono">collection</span>（稍后读）与 <span class="mono">clone</span>（待克隆网站 + <span class="mono">plannedPath</span>）同库分流，状态 <span class="mono">pending</span>。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 04: DEMO 1 (CLI & INSTALL) ==================== -->
+    <section class="slide" data-id="04-demo-cli" data-demo="demo-cli" data-tag="04 / 08 · LIVE DEMO · CLI & SERVICE">
+      <div style="display:grid; grid-template-columns: 560px 1fr; gap: 36px; align-items: stretch; height: 100%">
+        <div style="display:flex; flex-direction:column; justify-content:space-between">
+          <div>
+            <div class="eyebrow">PRODUCT DEMO 01 · 终端与守护服务</div>
+            <h2 class="stitle" style="font-size:44px">一键安装启动<br/>三层配置与 CLI</h2>
+            <p class="lead" style="font-size:21px;margin-top:8px">不仅服务浏览器插件，也能由开发者或 AI Agent 在终端直接调用。</p>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:16px">
+            <div class="panel" id="d1-step1" style="padding:20px 24px">
+              <h3 style="font-size:22px;margin-bottom:6px"><span class="badge">Step 1</span> scripts/install.sh</h3>
+              <p style="font-size:18px">体检 Node ≥ 18 / git / curl → <span class="mono">detached</span> 守护进程拉起服务 → 打开扩展页并复制路径。</p>
+            </div>
+            <div class="panel" id="d1-step2" style="padding:20px 24px">
+              <h3 style="font-size:22px;margin-bottom:6px"><span class="badge sky">Step 2</span> CLI 同步浅克隆</h3>
+              <p style="font-size:18px">前台实时展示 git 百分比进度，完成后共享写入 <span class="mono">server/jobs.json</span>。</p>
+            </div>
+            <div class="panel" id="d1-step3" style="padding:20px 24px">
+              <h3 style="font-size:22px;margin-bottom:6px"><span class="badge warn">Step 3</span> 按类别查询 collected.json</h3>
+              <p style="font-size:18px"><span class="mono">collected --category clone</span> 立即列出所有待克隆站点与目标目录。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="term-win">
+          <div class="term-bar">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+            <span class="term-title">zsh — ~/innate/innate-tools/repo-cloner</span>
+          </div>
+          <div class="term-body" id="termOutput"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 05: DEMO 2 (GITHUB CLONE + PROGRESS) ==================== -->
+    <section class="slide" data-id="05-demo-clone" data-demo="demo-clone" data-tag="05 / 08 · LIVE DEMO · GITHUB CLONE">
+      <div style="display:grid; grid-template-columns: 500px 1fr; gap: 36px; align-items: stretch; height: 100%">
+        <div style="display:flex; flex-direction:column; justify-content:space-between">
+          <div>
+            <div class="eyebrow">PRODUCT DEMO 02 · 插件克隆工作流</div>
+            <h2 class="stitle" style="font-size:44px">GitHub 页面一键入队<br/>5 并发实时进度追踪</h2>
+            <p class="lead" style="font-size:21px;margin-top:10px">省去切终端、拼路径、等下载——点完即走，后台自动跑完。</p>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:16px">
+            <div class="panel" id="d2-card1" style="padding:22px 24px">
+              <h3 style="font-size:22px;margin-bottom:6px">① 自动识别仓库与分类</h3>
+              <p style="font-size:18px">从当前标签页提取 <span class="mono">orionsheep/inkwork-mechanical-drawing</span>，点选 <span class="mono">skills</span> 分类。</p>
+            </div>
+            <div class="panel" id="d2-card2" style="padding:22px 24px">
+              <h3 style="font-size:22px;margin-bottom:6px">② 202 异步入队不阻塞</h3>
+              <p style="font-size:18px">POST <span class="mono">/api/clone</span> 秒回任务 ID，支持连续点选多个仓库批量排队。</p>
+            </div>
+            <div class="panel" id="d2-card3" style="padding:22px 24px">
+              <h3 style="font-size:22px;margin-bottom:6px">③ 历史 / 进度面板 2s 轮询</h3>
+              <p style="font-size:18px">实时解析 <span class="mono">git --progress</span> 百分比，失败任务可一键重跑。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="browser-stage" id="demo2Stage">
+          <div class="b-chrome">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+            <div class="b-url">🔒 https://github.com/orionsheep/inkwork-mechanical-drawing</div>
+            <div class="b-ext-btn">C</div>
+          </div>
+          <div class="b-page">
+            <div class="gh-header">📦 orionsheep / <strong>inkwork-mechanical-drawing</strong> <span class="badge">Public</span></div>
+            <div class="gh-desc">Mechanical engineering drawing & exploded-view skill for AI coding agents.</div>
+            <div class="gh-files">
+              <div class="gh-row"><span>📁 .claude/skills/mechanical-drawing</span><span>SKILL.md</span></div>
+              <div class="gh-row"><span>📁 scripts</span><span>render & check</span></div>
+              <div class="gh-row"><span>📁 src</span><span>geometry core</span></div>
+              <div class="gh-row"><span>📄 README.md</span><span>documentation</span></div>
+            </div>
+          </div>
+
+          <!-- KeepIt Popup -->
+          <div class="ci-popup">
+            <div class="ci-head">
+              <div class="ci-logo">C</div>
+              <span class="ci-title">KeepIt</span>
+              <span class="ci-ws">innate ▾</span>
+            </div>
+            <div class="ci-tabs">
+              <div class="ci-tab on" id="d2-tab-clone">Clone</div>
+              <div class="ci-tab">稍后读</div>
+              <div class="ci-tab">克隆网站</div>
+              <div class="ci-tab" id="d2-tab-hist">历史 / 进度</div>
+            </div>
+            <div class="ci-body" id="d2-popup-body"></div>
+            <div class="ci-foot">
+              <span class="ci-dot"></span><span>服务在线 (innate)</span>
+              <span style="margin-left:auto">设置</span>
+            </div>
+          </div>
+
+          <div class="click-ring" id="d2-ring"></div>
+          <svg class="demo-cursor" id="d2-cursor" viewBox="0 0 28 28">
+            <path d="M4 2 L4 23 L9.5 18 L13.5 26 L17 24.5 L13 16.5 L20.5 16.5 Z" fill="#ffffff" stroke="#0f172a" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 06: DEMO 3 (AUTO-URL COLLECT & CLONE WEBSITE) ==================== -->
+    <section class="slide" data-id="06-demo-collect" data-demo="demo-collect" data-tag="06 / 08 · LIVE DEMO · COLLECT & CLONE-WEBSITE">
+      <div style="display:grid; grid-template-columns: 1.15fr 0.85fr; gap: 30px; align-items: stretch; height: 100%">
+        <div class="browser-stage" id="demo3Stage" style="height: 690px">
+          <div class="b-chrome">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+            <div class="b-url" id="d3-browser-url">🔒 https://x.com/lijigang</div>
+            <div class="b-ext-btn">C</div>
+          </div>
+          <div class="b-page" id="d3-browser-page" style="padding:28px 34px"></div>
+
+          <div class="ci-popup" style="width: 455px; right: 20px; top: 62px">
+            <div class="ci-head">
+              <div class="ci-logo">C</div>
+              <span class="ci-title">KeepIt</span>
+              <span class="ci-ws">innate ▾</span>
+            </div>
+            <div class="ci-tabs">
+              <div class="ci-tab">Clone</div>
+              <div class="ci-tab on" id="d3-tab-col">稍后读</div>
+              <div class="ci-tab" id="d3-tab-web">克隆网站</div>
+              <div class="ci-tab">历史 / 进度</div>
+            </div>
+            <div class="ci-body" id="d3-popup-body" style="min-height:430px"></div>
+            <div class="ci-foot">
+              <span class="ci-dot"></span><span>服务在线 (innate)</span>
+              <span style="margin-left:auto">设置</span>
+            </div>
+          </div>
+
+          <div class="click-ring" id="d3-ring"></div>
+          <svg class="demo-cursor" id="d3-cursor" viewBox="0 0 28 28">
+            <path d="M4 2 L4 23 L9.5 18 L13.5 26 L17 24.5 L13 16.5 L20.5 16.5 Z" fill="#ffffff" stroke="#0f172a" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:18px; height: 690px">
+          <div>
+            <div class="eyebrow">PRODUCT DEMO 03 · 自动识别当前网址</div>
+            <h2 class="stitle" style="font-size:38px;margin-bottom:6px">同库分流写入 collected.json</h2>
+            <p style="font-size:19px;color:var(--ink-2)">自动读取当前页标题与网址，用 <span class="code-pill">category</span> 区分「稍后读文章」与「克隆网站」。</p>
+          </div>
+          <div class="term-win" style="flex:1; height:auto">
+            <div class="term-bar">
+              <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+              <span class="term-title">server/collected.json (实时落盘视图)</span>
+            </div>
+            <div class="term-body" id="d3-json" style="font-size:16.5px; line-height:1.5; padding:18px 22px"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 07: IMPACT & REDUCTION ==================== -->
+    <section class="slide" data-id="07-impact" data-tag="07 / 08 · IMPACT & SIMPLIFICATION">
+      <div>
+        <div class="eyebrow">RESULTS · 效果如何 · 减少了什么内容</div>
+        <h2 class="stitle">给操作流程与工程复杂度同时做减法，已在真实收集中高频验证</h2>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="num">6 → 1 步</div>
+          <div class="lbl">单次归档耗时 ~60s → 2s</div>
+          <div class="sub">省去开终端 / 找目录 / 手敲命令 / 重试</div>
+        </div>
+        <div class="kpi">
+          <div class="num">0 依赖</div>
+          <div class="lbl">0 npm 包 · 0 前端构建</div>
+          <div class="sub">Node 原生模块 + 纯静态 MV3 插件</div>
+        </div>
+        <div class="kpi">
+          <div class="num" id="factJobs">25 次</div>
+          <div class="lbl">真实 GitHub 克隆任务</div>
+          <div class="sub" id="factJobsSub">22 个参考仓已成功落盘 references/</div>
+        </div>
+        <div class="kpi">
+          <div class="num" id="factCol">30 条</div>
+          <div class="lbl">collected.json 结构化沉淀</div>
+          <div class="sub" id="factColSub">23 条 collection + 7 个 clone 站点</div>
+        </div>
+      </div>
+
+      <div class="row-2" style="margin-top: 6px">
+        <div class="panel">
+          <h3>✂️ 工程与文档减掉了什么？</h3>
+          <ul>
+            <li><strong>减掉多处重复逻辑</strong>：HTTP 服务、CLI、启停脚本统一收口到单文件 <span class="mono">server/core.mjs</span></li>
+            <li><strong>减掉配置割裂</strong>：命令行参数、环境变量 <span class="mono">KEEPIT_*</span>、<span class="mono">keepit.config.json</span> 合并为一套解析</li>
+            <li><strong>减掉 62% 文档冗余</strong>：README 从 274 行精简至 ~105 行，安装与守护浓缩为两个脚本</li>
+          </ul>
+        </div>
+        <div class="panel accent">
+          <h3>🚀 实际使用带来了什么改变？</h3>
+          <ul>
+            <li>连刷十几个 GitHub 项目时，连续点选即由后台 5 并发浅克隆自动排队落盘</li>
+            <li>浏览 X 推文、博客与在线工具站时，无需打断阅读，全部按 <span class="mono">collection / clone</span> 分类入库</li>
+            <li>所有产出的本地路径与 JSON 结构，天然可供工作区内的 AI Agent 直接读取与消费</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 08: SUMMARY & QUICKSTART ==================== -->
+    <section class="slide" data-id="08-summary" data-tag="08 / 08 · QUICKSTART & NEXT">
+      <div>
+        <div class="eyebrow">GET STARTED · 快速上手与演进路线</div>
+        <h1 class="hero" style="font-size:66px">一条命令启动后台，<span class="hl">Alt + R</span> 随时归档</h1>
+      </div>
+
+      <div class="row-2">
+        <div class="term-win" style="height: 360px">
+          <div class="term-bar">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+            <span class="term-title">Quickstart Commands</span>
+          </div>
+          <div class="term-body" style="font-size:20px;line-height:1.75"><span class="t-dim"># 1. 一键体检 + 启动后台守护服务 + 引导装插件</span>
+<span class="t-prompt">$</span> <span class="t-cmd">scripts/install.sh</span>
+
+<span class="t-dim"># 2. 日常管理服务（支持 keepit.config.json 与 KEEPIT_*）</span>
+<span class="t-prompt">$</span> <span class="t-cmd">scripts/service.sh status | restart | logs | enable</span>
+
+<span class="t-dim"># 3. Agent / 终端直接克隆或查看分类记录</span>
+<span class="t-prompt">$</span> <span class="t-cmd">node server/keepit-cli.mjs collected --category clone</span></div>
+        </div>
+
+        <div class="panel accent" style="display:flex;flex-direction:column;justify-content:space-between">
+          <div>
+            <span class="badge">NEXT MILESTONES · 下一步演进</span>
+            <h3 style="margin-top:14px;font-size:30px">消费 pending 队列，闭环自动化</h3>
+            <ul style="margin-top:14px">
+              <li><strong>collection 自动抓取</strong>：读取 <span class="mono">collected.json</span> 中待处理的文章与推文，转为本地 Markdown 归档</li>
+              <li><strong>clone 整站离线化</strong>：按已登记的 <span class="mono">plannedPath</span> 自动抓取静态资源到 <span class="mono">references/websites/</span></li>
+              <li><strong>SKILL 联动</strong>：让本地 Agent 一键调度「收集 → 抓取 → 提炼总结」全链路</li>
+            </ul>
+          </div>
+          <div style="font-family:var(--mono);font-size:18px;color:var(--accent-bright)">
+            innate-tools/repo-cloner · Ready on http://127.0.0.1:7420
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="subtitle-wrap"><div id="subtitle-box"></div></div>
+    <div id="global-bar"></div>
+  </div>
+</div>
+
+<div id="deck-controls">
+  <button id="prevBtn">←</button>
+  <span id="pageIndicator">1 / 8</span>
+  <button id="nextBtn">→</button>
+  <button id="playDemoBtn">▶ 演示动画</button>
+</div>
+
+<script>
+(() => {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const params = new URLSearchParams(location.search);
+  if (params.get('capture') === '1') document.body.classList.add('capture-mode');
+
+  function fitStage() {
+    const stage = document.getElementById('stage');
+    const sx = window.innerWidth / 1920;
+    const sy = window.innerHeight / 1080;
+    const s = Math.min(sx, sy);
+    stage.style.transform = `scale(${s})`;
+  }
+  window.addEventListener('resize', fitStage);
+  fitStage();
+
+  const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
+  const easeOut = (t) => 1 - Math.pow(1 - clamp(t), 3);
+  const easeInOut = (t) => {
+    t = clamp(t);
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  };
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  function placeCursor(cursorEl, ringEl, keyframes, p, clicks) {
+    let x = keyframes[0].x, y = keyframes[0].y;
+    for (let i = 0; i < keyframes.length - 1; i++) {
+      const a = keyframes[i], b = keyframes[i + 1];
+      if (p >= a.t && p <= b.t) {
+        const k = b.t === a.t ? 1 : easeInOut((p - a.t) / (b.t - a.t));
+        x = lerp(a.x, b.x, k);
+        y = lerp(a.y, b.y, k);
+        break;
+      } else if (p > b.t) {
+        x = b.x; y = b.y;
+      }
+    }
+    cursorEl.style.left = x + 'px';
+    cursorEl.style.top = y + 'px';
+
+    let ringAlpha = 0, ringScale = 0.2, rx = x, ry = y;
+    for (const c of clicks) {
+      if (p >= c.t && p <= c.t + 0.08) {
+        const kp = (p - c.t) / 0.08;
+        ringScale = 0.25 + kp * 1.15;
+        ringAlpha = 1 - kp;
+        rx = c.x; ry = c.y;
+        break;
+      }
+    }
+    ringEl.style.left = rx + 'px';
+    ringEl.style.top = ry + 'px';
+    ringEl.style.opacity = ringAlpha.toFixed(3);
+    ringEl.style.transform = `translate(-50%, -50%) scale(${ringScale.toFixed(3)})`;
+  }
+
+  // ---------- DEMO 1: CLI & Service ----------
+  function renderDemoCli(p) {
+    const s1 = document.getElementById('d1-step1');
+    const s2 = document.getElementById('d1-step2');
+    const s3 = document.getElementById('d1-step3');
+    s1.classList.toggle('accent', p < 0.36);
+    s2.classList.toggle('accent', p >= 0.36 && p < 0.72);
+    s3.classList.toggle('accent', p >= 0.72);
+
+    const cmd1 = 'scripts/install.sh -- --mirror https://ghfast.top';
+    const cmd2 = 'node server/keepit-cli.mjs clone https://github.com/orionsheep/inkwork-mechanical-drawing --category skills';
+    const cmd3 = 'node server/keepit-cli.mjs collected --category clone';
+
+    let html = '';
+    // Segment 1: 0 -> 0.36
+    const t1 = clamp(p / 0.10);
+    html += `<span class="t-prompt">$</span> <span class="t-cmd">${cmd1.slice(0, Math.floor(cmd1.length * t1))}</span>`;
+    if (p < 0.10) {
+      html += '<span class="t-cursor"></span>';
+    } else {
+      html += '\n';
+      if (p >= 0.12) html += `<span class="t-dim">==> 1/3 检查依赖</span>  node v24.14.1, git version 2.39.5\n`;
+      if (p >= 0.18) html += `<span class="t-dim">==> 2/3 启动后台服务</span>\n<span class="t-ok">KeepIt 已启动: http://127.0.0.1:7420  (pid 36361)</span>\n  workspace: /Users/patrick/innate\n`;
+      if (p >= 0.25) html += `<span class="t-dim">==> 3/3 已打开 chrome://extensions/ 并复制 extension 路径到剪贴板</span>\n\n`;
+    }
+
+    // Segment 2: 0.36 -> 0.72
+    if (p >= 0.36) {
+      const t2 = clamp((p - 0.36) / 0.11);
+      html += `<span class="t-prompt">$</span> <span class="t-cmd">${cmd2.slice(0, Math.floor(cmd2.length * t2))}</span>`;
+      if (p < 0.47) {
+        html += '<span class="t-cursor"></span>';
+      } else {
+        html += '\n';
+        html += `<span class="t-dim">KeepIt v0.3.0  shallow: --depth=1  category: skills</span>\n`;
+        if (p < 0.60) {
+          const pct = Math.min(99, Math.floor(((p - 0.47) / 0.13) * 100));
+          const bars = Math.floor(pct / 5);
+          html += `<span class="t-hi">Receiving objects: ${String(pct).padStart(2, ' ')}% [${'█'.repeat(bars)}${'░'.repeat(20 - bars)}]</span>`;
+        } else {
+          html += `<span class="t-ok">✅ clone OK in 3.8s → /Users/patrick/innate/references/skills/inkwork-mechanical-drawing</span>\n\n`;
+        }
+      }
+    }
+
+    // Segment 3: 0.72 -> 1.00
+    if (p >= 0.72) {
+      const t3 = clamp((p - 0.72) / 0.08);
+      html += `<span class="t-prompt">$</span> <span class="t-cmd">${cmd3.slice(0, Math.floor(cmd3.length * t3))}</span>`;
+      if (p < 0.80) {
+        html += '<span class="t-cursor"></span>';
+      } else {
+        html += '\n<span class="t-dim">collected.json 记录 (7):</span>\n';
+        if (p >= 0.83) html += `  <span class="t-hi">[clone]</span> clw-mwyqy76y-30  https://toolbox.adipower.workers.dev\n          <span class="t-dim">→ /Users/patrick/innate/references/websites/toolbox.adipower.workers.dev</span>\n`;
+        if (p >= 0.88) html += `  <span class="t-hi">[clone]</span> clw-mwyp9k1a-19  https://ui.aceternity.com\n          <span class="t-dim">→ /Users/patrick/innate/references/websites/ui.aceternity.com</span> <span class="t-cursor"></span>`;
+      }
+    }
+    document.getElementById('termOutput').innerHTML = html;
+  }
+
+  // ---------- DEMO 2: GitHub Clone + 5-Concurrent Progress ----------
+  function renderDemoClone(p) {
+    const inHistory = p >= 0.52;
+    document.getElementById('d2-tab-clone').classList.toggle('on', !inHistory);
+    document.getElementById('d2-tab-hist').classList.toggle('on', inHistory);
+
+    document.getElementById('d2-card1').classList.toggle('accent', p < 0.28);
+    document.getElementById('d2-card2').classList.toggle('accent', p >= 0.28 && p < 0.52);
+    document.getElementById('d2-card3').classList.toggle('accent', p >= 0.52);
+
+    const body = document.getElementById('d2-popup-body');
+    const pickedSkills = p >= 0.16;
+    const clickedClone = p >= 0.32;
+
+    if (!inHistory) {
+      body.innerHTML = `
+        <div class="ci-card">
+          <div class="ci-card-title"><span>orionsheep/inkwork-mechanical-drawing</span></div>
+          <div class="ci-card-sub">https://github.com/orionsheep/inkwork-mechanical-drawing</div>
+        </div>
+        <span class="ci-lbl">clone 到类别</span>
+        <div class="ci-chips">
+          <span class="ci-chip ${pickedSkills ? 'on' : ''}">skills</span>
+          <span class="ci-chip">plugins</span>
+          <span class="ci-chip">products</span>
+          <span class="ci-chip">others</span>
+        </div>
+        <div class="ci-actions" style="margin-top:22px">
+          <div class="ci-btn ${pickedSkills ? '' : 'disabled'}">Clone</div>
+          <div class="ci-btn-ghost">复制命令</div>
+        </div>
+        ${clickedClone ? `<div class="ci-status">✅ 已入队 (job-mwyqzyo0-23) → references/skills/inkwork-mechanical-drawing</div>` : ''}
+      `;
+    } else {
+      const prog = clamp((p - 0.52) / 0.36);
+      const pct1 = Math.min(100, Math.round(28 + prog * 72));
+      const pct2 = Math.min(100, Math.round(55 + prog * 45));
+      const done1 = pct1 >= 100;
+      const done2 = pct2 >= 100;
+      const runningCount = (done1 ? 0 : 1) + (done2 ? 0 : 1);
+      body.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="ci-pill">并发 ${runningCount}/5</span>
+          <span style="font-size:12px;color:#7d8f84">每 2s 自动刷新</span>
+        </div>
+        <div class="ci-job">
+          <div class="ci-card-title">
+            <span>${done1 ? '✅' : '🔄'} inkwork-mechanical-drawing</span>
+            <span style="font-family:var(--mono);font-size:12px;color:#7d8f84">${done1 ? 'done' : 'running'}</span>
+          </div>
+          <div style="margin-top:4px"><span class="ci-pill gray">skills</span> ${done1 ? '<span class="ci-pill">clone OK</span>' : ''}</div>
+          <div class="ci-bar-bg"><div class="ci-bar-fill" style="width:${pct1}%"></div></div>
+          <div style="font-family:var(--mono);font-size:11.5px;color:#7d8f84">${pct1}% · ${done1 ? 'done' : 'Receiving objects'}</div>
+        </div>
+        <div class="ci-job">
+          <div class="ci-card-title">
+            <span>${done2 ? '✅' : '🔄'} safty-material-sim</span>
+            <span style="font-family:var(--mono);font-size:12px;color:#7d8f84">${done2 ? 'done' : 'running'}</span>
+          </div>
+          <div style="margin-top:4px"><span class="ci-pill gray">others</span> ${done2 ? '<span class="ci-pill">clone OK</span>' : ''}</div>
+          <div class="ci-bar-bg"><div class="ci-bar-fill" style="width:${pct2}%"></div></div>
+          <div style="font-family:var(--mono);font-size:11.5px;color:#7d8f84">${pct2}% · ${done2 ? 'done' : 'Resolving deltas'}</div>
+        </div>
+        <div class="ci-job">
+          <div class="ci-card-title"><span>✅ wordlink</span><span style="font-family:var(--mono);font-size:12px;color:#7d8f84">done</span></div>
+          <div class="ci-bar-bg"><div class="ci-bar-fill" style="width:100%"></div></div>
+          <div style="font-family:var(--mono);font-size:11.5px;color:#7d8f84">100% · done</div>
+        </div>
+      `;
+    }
+
+    // Cursor coordinates inside demo2Stage (width ~1190, popup at right:26 -> x: 694..1164)
+    const keyframes = [
+      { t: 0.00, x: 560, y: 260 },
+      { t: 0.15, x: 745, y: 274 }, // skills chip
+      { t: 0.22, x: 745, y: 274 },
+      { t: 0.31, x: 855, y: 342 }, // Clone primary button
+      { t: 0.38, x: 855, y: 342 },
+      { t: 0.51, x: 1095, y: 132 }, // History/Progress tab
+      { t: 0.62, x: 1030, y: 245 },
+      { t: 1.00, x: 1030, y: 245 },
+    ];
+    const clicks = [
+      { t: 0.16, x: 745, y: 274 },
+      { t: 0.32, x: 855, y: 342 },
+      { t: 0.52, x: 1095, y: 132 },
+    ];
+    placeCursor(
+      document.getElementById('d2-cursor'),
+      document.getElementById('d2-ring'),
+      keyframes, p, clicks
+    );
+  }
+
+  // ---------- DEMO 3: Auto-URL Collect (collection) & Clone-Website (clone) ----------
+  function renderDemoCollect(p) {
+    const onWebTab = p >= 0.46;
+    const savedCol = p >= 0.22;
+    const savedClone = p >= 0.72;
+
+    document.getElementById('d3-tab-col').classList.toggle('on', !onWebTab);
+    document.getElementById('d3-tab-web').classList.toggle('on', onWebTab);
+
+    const bUrl = document.getElementById('d3-browser-url');
+    const bPage = document.getElementById('d3-browser-page');
+    if (!onWebTab) {
+      bUrl.textContent = '🔒 https://x.com/lijigang';
+      bPage.innerHTML = `
+        <div class="gh-header">𝕏 李继刚 (@lijigang)</div>
+        <div class="gh-desc" style="max-width:430px">Prompt & Agent Skill 创作者 · Unix 气质的思考与表达工具集（ljg-skills）。</div>
+        <div class="gh-files" style="width:420px;margin-top:20px">
+          <div class="gh-row"><span>📌 Pinned Thread</span><span>ljg-present v4.8</span></div>
+          <div class="gh-row"><span>📝 Article</span><span>如何把知识讲到能迁移</span></div>
+        </div>
+      `;
+    } else {
+      bUrl.textContent = '🔒 https://toolbox.adipower.workers.dev';
+      bPage.innerHTML = `
+        <div class="gh-header">🧰 ToolBox — Developer Web Utilities</div>
+        <div class="gh-desc" style="max-width:430px">轻量级在线开发者工具箱，计划将整站结构克隆至本地 references/websites/ 离线参考。</div>
+        <div class="gh-files" style="width:420px;margin-top:20px">
+          <div class="gh-row"><span>⚡ JSON / YAML Inspector</span><span>Interactive</span></div>
+          <div class="gh-row"><span>🎨 Color & SVG Lab</span><span>Zero-backend</span></div>
+        </div>
+      `;
+    }
+
+    const pBody = document.getElementById('d3-popup-body');
+    if (!onWebTab) {
+      pBody.innerHTML = `
+        <div class="ci-card">
+          <div class="ci-card-title"><span>李继刚 (@lijigang) / X</span><span class="ci-pill">collection</span></div>
+          <div class="ci-card-sub">https://x.com/lijigang</div>
+        </div>
+        <span class="ci-lbl">标题 (可选，默认用网页标题)</span>
+        <div class="ci-input placeholder">李继刚 (@lijigang) / X</div>
+        <span class="ci-lbl">备注 (可选)</span>
+        <div class="ci-input">Prompt 与 Skill 设计参考</div>
+        <div class="ci-actions">
+          <div class="ci-btn">稍后读</div>
+          <div class="ci-btn-ghost">刷新列表</div>
+        </div>
+        ${savedCol ? `<div class="ci-status">✅ 已记录 [collection] → https://x.com/lijigang</div>` : ''}
+      `;
+    } else {
+      pBody.innerHTML = `
+        <div class="ci-card">
+          <div class="ci-card-title"><span>ToolBox</span><span class="ci-pill gray">clone</span></div>
+          <div class="ci-card-sub">https://toolbox.adipower.workers.dev</div>
+        </div>
+        <span class="ci-lbl">站点地址 (已自动识别当前页，可修改)</span>
+        <div class="ci-input">https://toolbox.adipower.workers.dev</div>
+        <span class="ci-lbl">目录名 (可选)</span>
+        <div class="ci-input placeholder">默认: toolbox.adipower.workers.dev</div>
+        <div class="ci-actions">
+          <div class="ci-btn">克隆网站</div>
+          <div class="ci-btn-ghost">刷新列表</div>
+        </div>
+        ${savedClone ? `
+          <div class="ci-status">✅ 已记录 [clone] → references/websites/toolbox.adipower.workers.dev</div>
+          <div class="ci-job" style="margin-top:8px">
+            <div class="ci-card-title"><span class="ci-pill gray">clone</span><span>ToolBox</span><span style="font-size:11px;color:#7d8f84">pending</span></div>
+            <div class="ci-card-sub">目标: .../references/websites/toolbox.adipower.workers.dev</div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    // Live collected.json view on the right
+    let jsonText = '[\n';
+    if (savedClone) {
+      jsonText += `  <span class="t-hi">{
+    "id": "clw-mwyqy76y-30",
+    "category": "clone",
+    "url": "https://toolbox.adipower.workers.dev",
+    "title": "ToolBox",
+    "plannedPath": ".../references/websites/toolbox.adipower.workers.dev",
+    "crawlStatus": "pending"
+  }</span>,\n`;
+    }
+    if (savedCol) {
+      jsonText += `  <span class="t-ok">{
+    "id": "col-mwyqxq3e-29",
+    "category": "collection",
+    "url": "https://x.com/lijigang",
+    "title": "李继刚 (@lijigang) / X",
+    "note": "Prompt 与 Skill 设计参考",
+    "crawlStatus": "pending"
+  }</span>,\n`;
+    }
+    jsonText += `  <span class="t-dim">{
+    "id": "col-mwyonvfm-1",
+    "category": "collection",
+    "url": "https://x.com/Tobiasbuildss",
+    "crawlStatus": "pending"
+  }</span>\n]`;
+    document.getElementById('d3-json').innerHTML = jsonText;
+
+    // Cursor inside demo3Stage (width ~975, popup width 455 at right:20 -> popup x: 500..955)
+    const keyframes = [
+      { t: 0.00, x: 380, y: 240 },
+      { t: 0.21, x: 660, y: 392 }, // 稍后读 button
+      { t: 0.30, x: 660, y: 392 },
+      { t: 0.45, x: 785, y: 130 }, // 克隆网站 tab
+      { t: 0.56, x: 710, y: 278 }, // hover auto-detected URL input
+      { t: 0.71, x: 660, y: 392 }, // 克隆网站 button
+      { t: 1.00, x: 700, y: 475 },
+    ];
+    const clicks = [
+      { t: 0.22, x: 660, y: 392 },
+      { t: 0.46, x: 785, y: 130 },
+      { t: 0.72, x: 660, y: 392 },
+    ];
+    placeCursor(
+      document.getElementById('d3-cursor'),
+      document.getElementById('d3-ring'),
+      keyframes, p, clicks
+    );
+  }
+
+  // Deterministic entry point for both interactive viewing & headless video rendering.
+  // Accepts either a slide data-id string (e.g. "04-demo-cli") or numeric index.
+  window.renderAt = function(slideRef, p = 1, subtitle = '', globalProg = 0) {
+    let idx = typeof slideRef === 'string'
+      ? slides.findIndex((s) => s.dataset.id === slideRef)
+      : Number(slideRef);
+    if (idx < 0 || !Number.isFinite(idx)) idx = 0;
+    idx = clamp(idx, 0, slides.length - 1);
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+
+    const rawTag = (slides[idx].dataset.tag || '').replace(/^\d+\s*\/\s*\d+\s*·\s*/, '');
+    const pagePrefix = `${String(idx + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+    document.getElementById('topTag').textContent = rawTag ? `${pagePrefix} · ${rawTag}` : pagePrefix;
+    document.getElementById('pageIndicator').textContent = `${idx + 1} / ${slides.length}`;
+    document.getElementById('subtitle-box').textContent = subtitle || '';
+    document.getElementById('global-bar').style.width = `${(clamp(globalProg) * 100).toFixed(2)}%`;
+
+    const demoKind = slides[idx].dataset.demo;
+    if (demoKind === 'demo-cli') renderDemoCli(p);
+    else if (demoKind === 'demo-clone') renderDemoClone(p);
+    else if (demoKind === 'demo-collect') renderDemoCollect(p);
+  };
+
+  window.setFacts = function({ jobsTotal, jobsDone, colTotal, colCollection, colClone }) {
+    if (jobsTotal != null) document.getElementById('factJobs').textContent = `${jobsTotal} 次`;
+    if (jobsDone != null) document.getElementById('factJobsSub').textContent = `${jobsDone} 个参考仓已成功落盘 references/`;
+    if (colTotal != null) document.getElementById('factCol').textContent = `${colTotal} 条`;
+    if (colCollection != null && colClone != null) {
+      document.getElementById('factColSub').textContent = `${colCollection} 条 collection + ${colClone} 个 clone 站点`;
+    }
+  };
+
+  // Interactive browser navigation
+  let cur = 0;
+  let animRaf = null;
+  function playCurrentSlide(auto = false) {
+    if (animRaf) cancelAnimationFrame(animRaf);
+    const isDemo = Boolean(slides[cur] && slides[cur].dataset.demo);
+    if (!isDemo && auto) {
+      window.renderAt(cur, 1, '', (cur + 1) / slides.length);
+      return;
+    }
+    const dur = 11000;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const p = clamp((now - t0) / dur);
+      window.renderAt(cur, p, '', (cur + p) / slides.length);
+      if (p < 1) animRaf = requestAnimationFrame(tick);
+    };
+    animRaf = requestAnimationFrame(tick);
+  }
+  function go(next) {
+    cur = clamp(next, 0, slides.length - 1);
+    playCurrentSlide(true);
+  }
+  document.getElementById('prevBtn').onclick = () => go(cur - 1);
+  document.getElementById('nextBtn').onclick = () => go(cur + 1);
+  document.getElementById('playDemoBtn').onclick = () => playCurrentSlide(false);
+  window.addEventListener('keydown', (e) => {
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+    else if (e.key.toLowerCase() === 'p') { playCurrentSlide(false); }
+    else if (e.key.toLowerCase() === 'f') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+      else document.exitFullscreen().catch(() => {});
+    }
+  });
+
+  // Initial state
+  renderDemoCli(1);
+  renderDemoClone(0.35);
+  renderDemoCollect(0.85);
+  window.renderAt(0, 1, '', 1 / slides.length);
+})();
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-/* CloneIt HTTP companion service — zero-dependency Node ≥ 18.
+/* KeepIt HTTP companion service — zero-dependency Node ≥ 18.
  *
  * Endpoints (all GET unless noted, JSON):
  *   GET /api/ping                       → { ok, version, workspaces, maxConcurrent }
@@ -11,7 +11,7 @@
  *   GET /api/jobs                      → { jobs, running, maxConcurrent } recent records
  *   POST /api/retry                    → body { id } re-queues a failed clone record
  *
- * 收藏 (collect article addresses locally, crawling left empty):
+ * 稍后读 (read later, collect article addresses locally, crawling left empty):
  *   GET  /api/collected                → { collected: [{ id, url, title, ... }] }
  *   POST /api/collect                  → body { url, title?, note?, source? }
  *                                        201 on record; crawling not implemented
@@ -24,8 +24,8 @@
  * Flags (see parseConfig in core.mjs):
  *   --workspace <dir>      repeatable; default = cwd
  *   --port <n>             default 7420
- *   --token <secret>       require X-CloneIt-Token header on every request
- *   --watch-clipboard      poll clipboard for "CLONEIT://clone?..." sentinel
+ *   --token <secret>       require X-KeepIt-Token header on every request
+ *   --watch-clipboard      poll clipboard for "KEEPIT://clone?..." sentinel
  *   --full                 disable --depth=1 shallow clone
  *   --no-pull              never auto-pull; refuse when dir exists
  *   --mirror URL           GitHub mirror prefix
@@ -44,7 +44,7 @@ import {
   wsById, referencesRoot,
   listCategories, listCategoryRepos, parseRegistry,
   addCollected, listCollected, removeCollected, doCloneWebsite, isHttpUrl,
-  CloneItCore,
+  KeepItCore,
 } from './core.mjs';
 
 const argv = process.argv.slice(2);
@@ -52,10 +52,10 @@ let cfg;
 try {
   cfg = parseConfig(argv);
 } catch (e) {
-  console.error('[cloneit] config error:', e.message);
+  console.error('[keepit] config error:', e.message);
   process.exit(1);
 }
-const core = new CloneItCore(cfg);
+const core = new KeepItCore(cfg);
 
 // ---------- helpers ----------
 function send(res, code, obj) {
@@ -101,7 +101,7 @@ async function watchClipboardLoop() {
         text = r.stdout;
       }
     } catch { continue; }
-    const m = text.match(/CLONEIT:\/\/clone\?(\S+)/);
+    const m = text.match(/KEEPIT:\/\/clone\?(\S+)/);
     if (!m || text === last) continue;
     last = text;
     const params = new URLSearchParams(m[1]);
@@ -110,9 +110,9 @@ async function watchClipboardLoop() {
       category: params.get('category') || '',
       url: params.get('url') || '',
     };
-    console.log('[cloneit] clipboard sentinel →', req.url, '→', req.category);
+    console.log('[keepit] clipboard sentinel →', req.url, '→', req.category);
     const job = core.enqueueClone(req);
-    console.log('[cloneit] clipboard enqueued:', job.id);
+    console.log('[keepit] clipboard enqueued:', job.id);
   }
 }
 
@@ -189,7 +189,7 @@ const server = http.createServer(async (req, res) => {
       if (r.skipped) return ok(res, { job: { id: r.job.id, status: r.job.status }, skipped: true });
       return send(res, 202, { ok: true, queued: true, job: { id: r.job.id, status: r.job.status, retriedFrom: body.id } });
     }
-    // ---------- 收藏 & 克隆网站记录 (统一存入 collected.json, category: collection | clone) ----------
+    // ---------- 稍后读 & 克隆网站记录 (统一存入 collected.json, category: collection | clone) ----------
     if (u.pathname === '/api/collected') {
       const cat = q.get('category') || q.get('type') || null;
       return ok(res, { collected: listCollected(cfg, cat) });
@@ -223,19 +223,19 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.on('error', (e) => {
-  console.error('[cloneit] server error:', e.message);
+  console.error('[keepit] server error:', e.message);
   process.exit(1);
 });
 
 server.listen(cfg.port, '127.0.0.1', () => {
-  console.log(`[cloneit] v${VERSION} listening on http://127.0.0.1:${cfg.port}`);
-  if (cfg.loadedConfigFile) console.log(`[cloneit]   config: ${cfg.loadedConfigFile}`);
-  for (const w of cfg.workspaces) console.log(`[cloneit]   workspace ${w.id}: ${w.dir}`);
-  if (cfg.token) console.log('[cloneit]   token auth enabled');
-  if (cfg.watchClipboard) console.log('[cloneit]   clipboard sentinel watching (CLONEIT://clone?...)');
-  if (cfg.mirror) console.log('[cloneit]   mirror: ' + cfg.mirror);
-  if (cfg.proxy) console.log('[cloneit]   proxy: ' + cfg.proxy);
-  console.log(`[cloneit]   max concurrent clones: ${cfg.maxConcurrent}, git shallow: ${cfg.full ? 'full' : '--depth=1'}, retries: ${cfg.retry}`);
+  console.log(`[keepit] v${VERSION} listening on http://127.0.0.1:${cfg.port}`);
+  if (cfg.loadedConfigFile) console.log(`[keepit]   config: ${cfg.loadedConfigFile}`);
+  for (const w of cfg.workspaces) console.log(`[keepit]   workspace ${w.id}: ${w.dir}`);
+  if (cfg.token) console.log('[keepit]   token auth enabled');
+  if (cfg.watchClipboard) console.log('[keepit]   clipboard sentinel watching (KEEPIT://clone?...)');
+  if (cfg.mirror) console.log('[keepit]   mirror: ' + cfg.mirror);
+  if (cfg.proxy) console.log('[keepit]   proxy: ' + cfg.proxy);
+  console.log(`[keepit]   max concurrent clones: ${cfg.maxConcurrent}, git shallow: ${cfg.full ? 'full' : '--depth=1'}, retries: ${cfg.retry}`);
 });
 
-if (cfg.watchClipboard) watchClipboardLoop().catch((e) => console.error('[cloneit] clipboard watcher crashed:', e));
+if (cfg.watchClipboard) watchClipboardLoop().catch((e) => console.error('[keepit] clipboard watcher crashed:', e));

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# CloneIt 后台服务管理 (macOS / Linux)
-# 配置优先级: 命令行参数 > 环境变量 (CLONEIT_*) > 配置文件 (cloneit.config.json) > 默认值
+# KeepIt 后台服务管理 (macOS / Linux)
+# 配置优先级: 命令行参数 > 环境变量 (KEEPIT_*) > 配置文件 (keepit.config.json) > 默认值
 #
 #   scripts/service.sh start   [--config FILE] [server 参数...]   后台启动 (nohup)
 #   scripts/service.sh stop | restart | status | logs
@@ -9,11 +9,11 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SERVER="$REPO/server/clone-it-server.mjs"
+SERVER="$REPO/server/keepit-server.mjs"
 RUN_DIR="$REPO/.run"
-PID_FILE="$RUN_DIR/cloneit.pid"
-LOG_FILE="$RUN_DIR/cloneit.log"
-LABEL="com.innate.cloneit"
+PID_FILE="$RUN_DIR/keepit.pid"
+LOG_FILE="$RUN_DIR/keepit.log"
+LABEL="com.innate.keepit"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -29,16 +29,16 @@ node_bin() {
   if command -v realpath >/dev/null 2>&1; then realpath "$n"; else readlink -f "$n" 2>/dev/null || echo "$n"; fi
 }
 
-# 复用 server/core.mjs 解析 CLI > CLONEIT_* > cloneit.config.json > 默认值
+# 复用 server/core.mjs 解析 CLI > KEEPIT_* > keepit.config.json > 默认值
 resolve_cfg() {
   local node; node="$(node_bin)"
   local out
-  out="$(CLONEIT_CORE="$REPO/server/core.mjs" "$node" --input-type=module -e '
+  out="$(KEEPIT_CORE="$REPO/server/core.mjs" "$node" --input-type=module -e '
     import path from "node:path";
     import os from "node:os";
     import { pathToFileURL } from "node:url";
     const expand = (p) => p === "~" ? os.homedir() : (p.startsWith("~/") || p.startsWith("~\\")) ? path.join(os.homedir(), p.slice(2)) : p;
-    const { parseConfig } = await import(pathToFileURL(process.env.CLONEIT_CORE).href);
+    const { parseConfig } = await import(pathToFileURL(process.env.KEEPIT_CORE).href);
     const raw = process.argv.slice(1);
     const normArgv = [];
     for (let i = 0; i < raw.length; i++) {
@@ -52,9 +52,9 @@ resolve_cfg() {
     let cfg;
     try { cfg = parseConfig(normArgv); }
     catch (e) { console.error("error: " + e.message); process.exit(1); }
-    const normEnvCfg = process.env.CLONEIT_CONFIG?.trim() ? path.resolve(expand(process.env.CLONEIT_CONFIG.trim())) : "";
-    const normEnvWs = process.env.CLONEIT_WORKSPACE?.trim()
-      ? process.env.CLONEIT_WORKSPACE.split(path.delimiter).map((s) => s.trim()).filter(Boolean).map((d) => path.resolve(expand(d))).join(path.delimiter)
+    const normEnvCfg = process.env.KEEPIT_CONFIG?.trim() ? path.resolve(expand(process.env.KEEPIT_CONFIG.trim())) : "";
+    const normEnvWs = process.env.KEEPIT_WORKSPACE?.trim()
+      ? process.env.KEEPIT_WORKSPACE.split(path.delimiter).map((s) => s.trim()).filter(Boolean).map((d) => path.resolve(expand(d))).join(path.delimiter)
       : "";
     const emit = (v) => console.log(":" + String(v ?? "").replace(/[\r\n]/g, ""));
     emit(cfg.port);
@@ -77,8 +77,8 @@ resolve_cfg() {
       2) WS_EXPLICIT="$val" ;;
       3) CFG_WS0="$val" ;;
       4) LOADED_CFG="$val" ;;
-      5) if [[ -n "$val" ]]; then export CLONEIT_CONFIG="$val"; fi ;;
-      6) if [[ -n "$val" ]]; then export CLONEIT_WORKSPACE="$val"; fi ;;
+      5) if [[ -n "$val" ]]; then export KEEPIT_CONFIG="$val"; fi ;;
+      6) if [[ -n "$val" ]]; then export KEEPIT_WORKSPACE="$val"; fi ;;
       *) NORM_ARGS+=("$val") ;;
     esac
     i=$((i + 1))
@@ -98,7 +98,7 @@ resolve_cfg() {
 
 ping_ok() {
   local h=()
-  if [[ -n "$TOKEN" ]]; then h=(-H "X-CloneIt-Token: $TOKEN"); fi
+  if [[ -n "$TOKEN" ]]; then h=(-H "X-KeepIt-Token: $TOKEN"); fi
   curl -fsS -m 2 ${h[@]+"${h[@]}"} "http://127.0.0.1:$PORT/api/ping" >/dev/null 2>&1
 }
 
@@ -112,7 +112,7 @@ wait_ready() {
 
 cmd_start() {
   resolve_cfg "$@"
-  if ping_ok; then echo "CloneIt 已在运行: http://127.0.0.1:$PORT"; return 0; fi
+  if ping_ok; then echo "KeepIt 已在运行: http://127.0.0.1:$PORT"; return 0; fi
   mkdir -p "$RUN_DIR"
   local node; node="$(node_bin)"
   "$node" -e '
@@ -125,7 +125,7 @@ cmd_start() {
     child.unref();
   ' "$WORKSPACE" "$LOG_FILE" "$PID_FILE" "$node" "$SERVER" ${SERVER_ARGS[@]+"${SERVER_ARGS[@]}"}
   if wait_ready; then
-    echo "CloneIt 已启动: http://127.0.0.1:$PORT  (pid $(cat "$PID_FILE"))"
+    echo "KeepIt 已启动: http://127.0.0.1:$PORT  (pid $(cat "$PID_FILE"))"
     if [[ -n "$LOADED_CFG" ]]; then echo "  config:    $LOADED_CFG"; fi
     echo "  workspace: $WORKSPACE"
     echo "  log:       $LOG_FILE"
@@ -144,10 +144,10 @@ cmd_stop() {
     kill "$pid"
     for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.25; done
     rm -f "$PID_FILE"
-    echo "CloneIt 已停止"
+    echo "KeepIt 已停止"
   else
     rm -f "$PID_FILE"
-    if ping_ok; then die "端口 $PORT 上的服务不是由本脚本启动的, 请手动结束"; else echo "CloneIt 未在运行"; fi
+    if ping_ok; then die "端口 $PORT 上的服务不是由本脚本启动的, 请手动结束"; else echo "KeepIt 未在运行"; fi
   fi
 }
 
@@ -180,8 +180,8 @@ cmd_enable() {
   done
   local env_xml="    <key>PATH</key><string>$(xml_escape "$(dirname "$node"):/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin")</string>"$'\n'
   local k v
-  for k in CLONEIT_CONFIG CLONEIT_WORKSPACE CLONEIT_PORT CLONEIT_TOKEN CLONEIT_MIRROR CLONEIT_PROXY \
-           CLONEIT_MAX_CONCURRENT CLONEIT_RETRY CLONEIT_FULL CLONEIT_NO_PULL CLONEIT_CLONE_TIMEOUT CLONEIT_WATCH_CLIPBOARD; do
+  for k in KEEPIT_CONFIG KEEPIT_WORKSPACE KEEPIT_PORT KEEPIT_TOKEN KEEPIT_MIRROR KEEPIT_PROXY \
+           KEEPIT_MAX_CONCURRENT KEEPIT_RETRY KEEPIT_FULL KEEPIT_NO_PULL KEEPIT_CLONE_TIMEOUT KEEPIT_WATCH_CLIPBOARD; do
     v="$(printenv "$k" || true)"
     if [[ -n "$v" ]]; then env_xml+="    <key>$k</key><string>$(xml_escape "$v")</string>"$'\n'; fi
   done
@@ -207,7 +207,7 @@ $env_xml  </dict>
 EOF
   launchctl bootstrap "gui/$(id -u)" "$PLIST"
   wait_ready || die "launchd 已注册但服务未就绪, 查看日志: $LOG_FILE"
-  echo "CloneIt 已注册开机自启并启动: http://127.0.0.1:$PORT"
+  echo "KeepIt 已注册开机自启并启动: http://127.0.0.1:$PORT"
   if [[ -n "$LOADED_CFG" ]]; then echo "  config: $LOADED_CFG"; fi
   echo "  plist:  $PLIST"
 }
@@ -225,7 +225,7 @@ case "$sub" in
   stop)    cmd_stop "$@" ;;
   restart)
     resolve_cfg "$@"
-    if launchd_loaded; then launchctl kickstart -k "gui/$(id -u)/$LABEL" && wait_ready && echo "CloneIt 已重启 (launchd)"
+    if launchd_loaded; then launchctl kickstart -k "gui/$(id -u)/$LABEL" && wait_ready && echo "KeepIt 已重启 (launchd)"
     else cmd_stop "$@" || true; cmd_start "$@"; fi ;;
   status)  cmd_status "$@" ;;
   logs)    touch "$LOG_FILE" 2>/dev/null || true; tail -n 50 -f "$LOG_FILE" ;;

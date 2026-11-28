@@ -1,4 +1,4 @@
-/* CloneIt popup — Tab 式 UI: Clone / 收藏 / 克隆网站 / 历史·进度. */
+/* KeepIt popup — Tab 式 UI: Clone / 稍后读 / 克隆网站 / 历史·进度. */
 'use strict';
 
 const $ = (id) => document.getElementById(id);
@@ -29,7 +29,7 @@ function escapeHtml(s) {
 }
 
 function apiBase(s) { return s.serverUrl.replace(/\/+$/, ''); }
-function headers(s) { return s.token ? { 'X-CloneIt-Token': s.token } : {}; }
+function headers(s) { return s.token ? { 'X-KeepIt-Token': s.token } : {}; }
 
 async function fetchApi(pathname, opts = {}) {
   const s = await settings();
@@ -91,7 +91,7 @@ async function detectRepo() {
   return { owner, name, url: `https://github.com/${owner}/${name}` };
 }
 
-// ---------- current page info (for 收藏 & 克隆网站, any http/https page) ----------
+// ---------- current page info (for 稍后读 & 克隆网站, any http/https page) ----------
 async function detectPage() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !/^https?:\/\//.test(tab.url || '')) return null;
@@ -239,12 +239,12 @@ async function loadCatsAndTree() {
   renderRepo();
 }
 
-// ---------- current page auto-fill (收藏 & 克隆网站) ----------
+// ---------- current page auto-fill (稍后读 & 克隆网站) ----------
 async function renderPage() {
   const page = await detectPage();
   state.currentPage = page;
 
-  // 收藏 tab
+  // 稍后读 tab
   if (!page) {
     $('pageTitle').textContent = '无可用页面';
     $('pageUrl').style.display = 'none';
@@ -333,7 +333,7 @@ function bindRemoveButtons(box, onStatus) {
 }
 
 function renderCollectedLists() {
-  // 1) 收藏 tab 列表 (支持 全部 / collection / clone 过滤)
+  // 1) 稍后读 tab 列表 (支持 全部 / collection / clone 过滤)
   const colBox = $('colList');
   const filtered = state.collectFilter === 'all'
     ? state.collected
@@ -385,7 +385,7 @@ document.querySelectorAll('#colFilter button[data-cat]').forEach((btn) => {
 
 $('colGo').onclick = async () => {
   const page = await detectPage();
-  if (!page) { setColStatus('没有可收藏的页面', 'err'); return; }
+  if (!page) { setColStatus('没有可保存的页面', 'err'); return; }
   if (!state.serverUp) { setColStatus('服务离线 — 请先启动后台服务', 'err'); return; }
   const btn = $('colGo');
   btn.disabled = true;
@@ -402,7 +402,7 @@ $('colGo').onclick = async () => {
     $('colTitle').value = ''; $('colNote').value = '';
     await refreshCollectedStore();
   } catch (e) {
-    setColStatus('收藏失败: ' + e.message, 'err');
+    setColStatus('稍后读失败: ' + e.message, 'err');
   }
   btn.disabled = false;
 };

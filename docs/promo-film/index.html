@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<title>KeepIt — Product Promo Film</title>
+<style>
+  :root {
+    --stage-bg: #060d0a;
+    --emerald: #10b981;
+    --emerald-bright: #34d399;
+    --emerald-deep: #065f46;
+    --emerald-soft: #d1fae5;
+    --pop-bg: #f4faf6;
+    --pop-surface: #ffffff;
+    --pop-ink: #12271b;
+    --pop-ink2: #4a5d51;
+    --pop-ink3: #7d8f84;
+    --pop-line: #dcefe4;
+    --danger: #ef4444;
+    --amber: #f59e0b;
+    --sans: 'PingFang SC', 'Hiragino Sans GB', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', Menlo, Monaco, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 1920px; height: 1080px; overflow: hidden;
+    background: #040806;
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  #viewport {
+    position: relative;
+    width: 1920px; height: 1080px;
+    overflow: hidden;
+    perspective: 1550px;
+    perspective-origin: 960px 540px;
+    background:
+      radial-gradient(950px 620px at 50% 42%, rgba(16, 185, 129, 0.13), transparent 70%),
+      radial-gradient(700px 500px at 18% 82%, rgba(6, 95, 70, 0.18), transparent 65%),
+      linear-gradient(180deg, #07110c 0%, #040907 100%);
+  }
+
+  /* Subtle studio grid backdrop */
+  .studio-grid {
+    position: absolute; inset: -200px;
+    background-image:
+      linear-gradient(rgba(52, 211, 153, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(52, 211, 153, 0.045) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 75% 65% at 50% 50%, #000 30%, transparent 90%);
+    pointer-events: none;
+  }
+
+  /* 3D Camera Rig: pivots around exact screen center (960, 540) */
+  #cam-pivot {
+    position: absolute;
+    left: 960px; top: 540px;
+    width: 0; height: 0;
+    transform-style: preserve-3d;
+  }
+
+  #world {
+    position: absolute;
+    left: 0; top: 0;
+    width: 1920px; height: 1080px;
+    transform-style: preserve-3d;
+  }
+
+  .act-layer {
+    position: absolute; inset: 0;
+    width: 1920px; height: 1080px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .act-layer.on { opacity: 1; }
+
+  /* ==================== ACT 1: COLD OPEN (PAIN -> ALT+R REVEAL) ==================== */
+  .pain-card {
+    position: absolute;
+    width: 440px;
+    padding: 24px 26px;
+    border-radius: 20px;
+    background: rgba(15, 25, 20, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 28px 60px rgba(0, 0, 0, 0.65);
+    color: #e5efe9;
+  }
+  .pain-card .p-tag {
+    display: inline-block;
+    font: 700 12px var(--mono);
+    padding: 3px 10px; border-radius: 999px;
+    margin-bottom: 12px;
+    background: rgba(239, 68, 68, 0.16); color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+  .pain-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 10px; color: #fff; }
+  .pain-card .p-code {
+    font: 13px/1.55 var(--mono);
+    padding: 12px 14px; border-radius: 12px;
+    background: rgba(0, 0, 0, 0.48);
+    color: #9ca9a1;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .pain-card .p-code .err { color: #f87171; font-weight: 600; }
+
+  .hero-reveal-box {
+    position: absolute;
+    left: 560px; top: 430px; width: 800px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+  }
+  .keycap-pair {
+    display: flex; align-items: center; gap: 18px;
+    margin-bottom: 24px;
+  }
+  .keycap {
+    min-width: 118px; height: 108px; padding: 0 26px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, #162c22 0%, #0c1913 100%);
+    border: 2px solid rgba(52, 211, 153, 0.55);
+    box-shadow:
+      0 10px 0 #06100b,
+      0 22px 50px rgba(16, 185, 129, 0.42),
+      inset 0 2px 0 rgba(255, 255, 255, 0.18);
+    display: flex; align-items: center; justify-content: center;
+    font: 800 42px var(--mono); color: #ecfdf5;
+    letter-spacing: 1px;
+  }
+  .keycap.pressed {
+    transform: translateY(7px);
+    box-shadow:
+      0 3px 0 #06100b,
+      0 14px 40px rgba(16, 185, 129, 0.75),
+      inset 0 2px 12px rgba(52, 211, 153, 0.35);
+    border-color: #6ee7b7;
+  }
+  .key-plus { font: 700 34px var(--mono); color: #34d399; }
+  .hero-brand-row {
+    display: flex; align-items: center; gap: 16px;
+  }
+  .hero-logo {
+    width: 56px; height: 56px; border-radius: 16px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    display: grid; place-items: center;
+    font: 800 30px var(--sans); color: #fff;
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.5);
+  }
+  .hero-brand-title {
+    font-size: 52px; font-weight: 800; color: #ffffff; letter-spacing: -0.8px;
+  }
+  .hero-brand-sub {
+    margin-top: 10px;
+    font-size: 21px; color: #a7f3d0; font-weight: 500;
+  }
+
+  /* ==================== ACT 2: REAL MACOS TERMINAL + 3-LAYER CONFIG ==================== */
+  .term-win {
+    position: absolute;
+    left: 210px; top: 145px; width: 1050px; height: 740px;
+    border-radius: 20px;
+    background: rgba(10, 16, 14, 0.95);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    box-shadow: 0 40px 90px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255,255,255,0.05);
+    overflow: hidden;
+  }
+  .term-bar {
+    height: 46px; padding: 0 18px;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex; align-items: center; gap: 9px;
+  }
+  .tl { width: 12px; height: 12px; border-radius: 50%; }
+  .tl.r { background: #ff5f57; } .tl.y { background: #febc2e; } .tl.g { background: #28c840; }
+  .term-title {
+    margin-left: auto; margin-right: auto;
+    font: 500 13px var(--mono); color: #8da397;
+  }
+  .term-body {
+    padding: 26px 30px;
+    font: 16.5px/1.7 var(--mono);
+    color: #d8e8df;
+  }
+  .t-prompt { color: #34d399; font-weight: 700; }
+  .t-cmd { color: #ffffff; font-weight: 600; }
+  .t-dim { color: #789083; }
+  .t-ok { color: #34d399; font-weight: 600; }
+  .t-hi { color: #fde68a; }
+  .t-caret {
+    display: inline-block; width: 9px; height: 18px;
+    background: #34d399; vertical-align: -3px; margin-left: 2px;
+  }
+
+  .cfg-stack {
+    position: absolute;
+    left: 1305px; top: 210px; width: 410px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .cfg-card {
+    padding: 20px 22px; border-radius: 18px;
+    background: rgba(14, 27, 21, 0.9);
+    border: 1px solid rgba(52, 211, 153, 0.24);
+    box-shadow: 0 22px 50px rgba(0,0,0,0.55);
+    color: #ecfdf5;
+  }
+  .cfg-card .c-kicker {
+    font: 700 11px var(--mono); color: #34d399;
+    letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .cfg-card h4 { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+  .cfg-card p { font: 13px/1.5 var(--mono); color: #9ab3a5; }
+
+  /* ==================== ACTS 3, 4, 5: REAL BROWSER + LIFTED KEEPIT POPUP ==================== */
+  .browser-win {
+    position: absolute;
+    left: 150px; top: 96px; width: 1620px; height: 880px;
+    border-radius: 22px;
+    background: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 48px 110px rgba(0, 0, 0, 0.78);
+    overflow: hidden;
+  }
+  .b-chrome {
+    height: 56px; padding: 0 20px;
+    background: #f1f5f3;
+    border-bottom: 1px solid #dde6e0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .b-omnibox {
+    margin-left: 18px; flex: 1; max-width: 1120px; height: 36px;
+    border-radius: 10px; background: #ffffff;
+    border: 1px solid #d4e0d8;
+    padding: 0 14px;
+    display: flex; align-items: center; gap: 8px;
+    font: 13.5px var(--mono); color: #1f3529;
+  }
+  .b-lock { color: #10b981; font-size: 13px; }
+  .b-ext-slot {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .b-ext-btn {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: #10b981; color: #fff;
+    font: 800 15px var(--sans);
+    display: grid; place-items: center;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.45);
+    position: relative;
+  }
+  .b-ext-btn.ring {
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.32), 0 4px 12px rgba(16,185,129,0.5);
+  }
+  .b-key-hint {
+    font: 600 12px var(--mono); color: #4a5d51;
+    background: #e3ece7; padding: 4px 9px; border-radius: 7px;
+  }
+
+  /* Browser page content (GitHub or Article/Tool) */
+  .b-page {
+    padding: 36px 52px;
+    height: calc(100% - 56px);
+    background: #ffffff;
+    color: #1f2328;
+  }
+  .gh-repo-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 18px;
+  }
+  .gh-owner { font: 500 26px var(--sans); color: #0969da; }
+  .gh-slash { font-size: 26px; color: #656d76; }
+  .gh-name { font: 700 26px var(--sans); color: #0969da; }
+  .gh-public {
+    font: 600 12px var(--mono); color: #57606a;
+    border: 1px solid #d0d7de; border-radius: 999px; padding: 2px 10px;
+  }
+  .gh-desc { font-size: 17px; color: #4d555e; max-width: 820px; line-height: 1.55; margin-bottom: 24px; }
+  .gh-files {
+    max-width: 860px; border: 1px solid #d8dee4; border-radius: 12px; overflow: hidden;
+  }
+  .gh-file-row {
+    padding: 11px 16px; border-bottom: 1px solid #eaeef2;
+    display: flex; justify-content: space-between;
+    font: 13.5px var(--mono); color: #24292f;
+    background: #fcfdfd;
+  }
+  .gh-file-row:last-child { border-bottom: none; }
+  .gh-file-row span:last-child { color: #656d76; }
+
+  .web-article {
+    max-width: 840px;
+  }
+  .web-pill {
+    display: inline-block; padding: 4px 12px; border-radius: 999px;
+    background: #ecfdf5; color: #065f46; font: 700 12px var(--mono);
+    margin-bottom: 14px;
+  }
+  .web-article h2 { font-size: 32px; font-weight: 800; color: #111827; margin-bottom: 12px; letter-spacing: -0.4px; }
+  .web-article p { font-size: 16.5px; line-height: 1.65; color: #4b5563; margin-bottom: 18px; }
+  .web-code-card {
+    padding: 18px 20px; border-radius: 14px;
+    background: #0f172a; color: #e2e8f0;
+    font: 14px/1.6 var(--mono);
+  }
+
+  /* ===== LIFTED REAL KEEPIT MV3 POPUP (verbatim tokens from extension/popup.css) ===== */
+  .keepit-popup {
+    position: absolute;
+    left: 1320px; top: 158px;
+    width: 400px;
+    background: var(--pop-bg);
+    color: var(--pop-ink);
+    border-radius: 14px;
+    border: 1px solid #c6e6d5;
+    box-shadow:
+      0 30px 75px rgba(5, 22, 14, 0.42),
+      0 0 0 1px rgba(16, 185, 129, 0.18);
+    overflow: hidden;
+    font: 13px/1.45 var(--sans);
+    transform-origin: 372px 0px;
+  }
+  .cp-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--pop-line);
+    background: linear-gradient(180deg, #ecfdf5, var(--pop-bg));
+  }
+  .cp-logo {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--emerald); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 12px;
+    box-shadow: 0 1px 3px rgba(16,185,129,.4);
+  }
+  .cp-header h1 { font-size: 14px; font-weight: 600; }
+  .cp-ws {
+    margin-left: auto;
+    border: 1px solid var(--pop-line); border-radius: 8px;
+    padding: 3px 9px; background: var(--pop-surface);
+    font: 12px var(--mono); color: var(--pop-ink);
+  }
+  .cp-tabs {
+    display: flex; padding: 0 14px;
+    border-bottom: 1px solid var(--pop-line);
+    background: var(--pop-surface);
+  }
+  .cp-tab {
+    flex: 1; text-align: center;
+    font: 600 12px var(--sans); color: var(--pop-ink3);
+    padding: 9px 0; border-bottom: 2px solid transparent;
+  }
+  .cp-tab.on { color: var(--emerald-deep); border-bottom-color: var(--emerald); }
+  .cp-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 15px; padding: 0 4px; margin-left: 3px;
+    font: 700 10px var(--mono);
+    background: #fee2e2; color: #b91c1c; border-radius: 999px;
+  }
+  .cp-main { padding: 12px 14px 14px; }
+  .cp-card {
+    background: var(--pop-surface);
+    border: 1px solid var(--pop-line);
+    border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 10px;
+  }
+  .cp-repo-name { font-weight: 600; font-size: 13px; }
+  .cp-repo-url { font: 11.5px var(--mono); color: var(--pop-ink2); margin-top: 3px; word-break: break-all; }
+  .cp-lbl {
+    display: block; font-size: 11px; font-weight: 600;
+    color: var(--pop-ink3); letter-spacing: .4px;
+    margin: 9px 0 5px;
+  }
+  .cp-cats { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cp-chip {
+    font: 12px var(--mono);
+    border: 1px solid var(--pop-line); border-radius: 8px;
+    background: var(--pop-surface); color: var(--pop-ink2);
+    padding: 4px 10px;
+  }
+  .cp-chip.on {
+    background: var(--emerald); border-color: var(--emerald); color: #fff;
+    box-shadow: 0 1px 4px rgba(16,185,129,.35);
+  }
+  .cp-input {
+    width: 100%; font: 12px/1.4 var(--mono);
+    border: 1px solid var(--pop-line); border-radius: 8px;
+    padding: 7px 10px; background: var(--pop-surface); color: var(--pop-ink);
+  }
+  .cp-input.autofill {
+    border-color: var(--emerald);
+    box-shadow: 0 0 0 3px var(--emerald-soft);
+  }
+  .cp-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .cp-btn-pri {
+    flex: 1; text-align: center;
+    font: 600 13px var(--sans); color: #fff;
+    background: var(--emerald); border-radius: 9px; padding: 9px 0;
+  }
+  .cp-btn-pri.disabled { background: #9fd8c4; }
+  .cp-btn-pri.pressed { transform: scale(0.97); filter: brightness(0.95); }
+  .cp-btn-ghost {
+    font: 12px var(--sans); color: var(--pop-ink2);
+    border: 1px solid var(--pop-line); border-radius: 9px; padding: 9px 12px;
+  }
+  .cp-status {
+    margin-top: 10px; font-size: 11.5px; border-radius: 8px;
+    padding: 8px 10px; background: var(--emerald-soft); color: var(--emerald-deep);
+    font-weight: 600;
+  }
+  .cp-pill {
+    display: inline-flex; align-items: center;
+    font: 11px var(--mono);
+    background: var(--emerald-soft); color: var(--emerald-deep);
+    border-radius: 999px; padding: 1px 8px;
+  }
+  .cp-pill.gray { background: #eef2f0; color: var(--pop-ink2); }
+  .cp-conc-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .cp-retry-all {
+    margin-left: auto;
+    font: 600 11px var(--sans); color: #fff;
+    background: var(--emerald); border-radius: 7px; padding: 4px 10px;
+    box-shadow: 0 1px 3px rgba(16,185,129,.35);
+  }
+  .cp-job {
+    background: var(--pop-surface);
+    border: 1px solid var(--pop-line); border-radius: 10px;
+    padding: 8px 10px; margin-bottom: 8px;
+  }
+  .cp-job.failed { border-color: #fecaca; background: #fffdfd; }
+  .cp-jhead { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .cp-jname { font-weight: 600; font-size: 12px; }
+  .cp-jstatus { margin-left: auto; font: 600 10px var(--mono); color: var(--pop-ink3); }
+  .cp-job.failed .cp-jstatus { color: #dc2626; }
+  .cp-bar-track { height: 6px; background: #eef2f0; border-radius: 999px; overflow: hidden; margin: 5px 0; }
+  .cp-bar-fill { height: 100%; background: var(--emerald); border-radius: 999px; }
+  .cp-job.failed .cp-bar-fill { background: #dc2626; }
+  .cp-jerr { font: 10.5px var(--mono); color: #dc2626; margin-top: 3px; }
+  .cp-footer {
+    padding: 7px 14px; border-top: 1px solid var(--pop-line);
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; color: var(--pop-ink3); background: var(--pop-surface);
+  }
+  .cp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 4px var(--emerald); }
+
+  /* Floating kinetic callout pill in world space */
+  .kinetic-callout {
+    position: absolute;
+    padding: 12px 20px; border-radius: 999px;
+    background: rgba(6, 22, 16, 0.92);
+    border: 1px solid rgba(52, 211, 153, 0.5);
+    color: #ecfdf5; font: 700 17px var(--sans);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+  }
+
+  /* ==================== ACT 6: 3D ARCHITECTURE PULL-BACK & HERO END CARD ==================== */
+  .arch-stage {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 60px 120px;
+  }
+  .arch-flow {
+    display: flex; align-items: center; gap: 28px;
+    margin-bottom: 44px;
+  }
+  .arch-node {
+    width: 430px; padding: 26px 28px;
+    border-radius: 22px;
+    background: rgba(12, 24, 18, 0.9);
+    border: 1px solid rgba(52, 211, 153, 0.34);
+    box-shadow: 0 28px 65px rgba(0, 0, 0, 0.65);
+    color: #ecfdf5;
+  }
+  .arch-node .a-step { font: 700 12px var(--mono); color: #34d399; margin-bottom: 8px; }
+  .arch-node h3 { font-size: 23px; font-weight: 800; margin-bottom: 8px; }
+  .arch-node p { font-size: 14.5px; line-height: 1.55; color: #9db8aa; }
+  .arch-arrow { font: 800 30px var(--mono); color: #34d399; }
+
+  .metrics-strip {
+    display: flex; gap: 28px; margin-bottom: 46px;
+  }
+  .metric-pill {
+    min-width: 280px; padding: 20px 30px;
+    border-radius: 20px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    text-align: center;
+  }
+  .metric-pill .m-val { font: 800 44px var(--mono); color: #34d399; }
+  .metric-pill .m-lbl { font-size: 15px; color: #d1fae5; margin-top: 4px; font-weight: 600; }
+
+  .end-lockup {
+    display: flex; align-items: center; gap: 24px;
+    padding: 22px 42px; border-radius: 26px;
+    background: rgba(10, 20, 15, 0.92);
+    border: 1px solid rgba(52, 211, 153, 0.45);
+    box-shadow: 0 24px 70px rgba(16, 185, 129, 0.25);
+  }
+  .end-lockup .cmd-pill {
+    font: 600 17px var(--mono); color: #a7f3d0;
+    background: rgba(16, 185, 129, 0.14);
+    padding: 10px 18px; border-radius: 12px;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+  }
+
+  /* ==================== WORLD CURSOR + CLICK SHOCKWAVE ==================== */
+  #world-cursor {
+    position: absolute; left: 0; top: 0;
+    width: 34px; height: 34px;
+    pointer-events: none; z-index: 90;
+    transform-origin: 4px 3px;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.48));
+  }
+  #click-ring {
+    position: absolute; left: 0; top: 0;
+    width: 54px; height: 54px; margin-left: -27px; margin-top: -27px;
+    border-radius: 50%;
+    border: 3px solid #10b981;
+    background: rgba(16, 185, 129, 0.18);
+    pointer-events: none; z-index: 89;
+    opacity: 0;
+  }
+
+  /* ==================== SCREEN-SPACE LENS FINISH, SPOTLIGHT & CAPTIONS ==================== */
+  #spotlight {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 120;
+  }
+
+  #caption-wrap {
+    position: absolute; left: 0; right: 0; bottom: 38px;
+    display: flex; justify-content: center;
+    pointer-events: none; z-index: 150;
+  }
+  #caption-pill {
+    max-width: 1520px;
+    padding: 12px 28px;
+    border-radius: 999px;
+    background: rgba(5, 12, 9, 0.84);
+    border: 1px solid rgba(52, 211, 153, 0.32);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.55);
+    color: #f8fafc;
+    font-size: 25px; font-weight: 600; letter-spacing: 0.2px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  #caption-pill:empty { display: none; }
+  .cap-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #34d399; box-shadow: 0 0 10px #10b981;
+    flex-shrink: 0;
+  }
+
+  #film-bar {
+    position: absolute; left: 0; bottom: 0; height: 4px;
+    background: linear-gradient(90deg, #059669, #34d399);
+    z-index: 160; width: 0%;
+  }
+
+  /* Interactive preview HUD (hidden automatically when ?capture=1) */
+  #preview-hud {
+    position: absolute; top: 18px; right: 22px; z-index: 200;
+    display: flex; gap: 8px;
+  }
+  body.capture #preview-hud { display: none !important; }
+  #preview-hud button {
+    padding: 7px 14px; border-radius: 9px;
+    background: rgba(12, 24, 18, 0.85); color: #d1fae5;
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    font: 600 12px var(--mono); cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div class="studio-grid"></div>
+
+  <div id="cam-pivot">
+    <div id="world">
+
+      <!-- ===== ACT 1: COLD OPEN ===== -->
+      <div class="act-layer on" data-act="01-hook" id="layer-01">
+        <div class="pain-card" id="pcard-1" style="left: 190px; top: 175px">
+          <span class="p-tag">FRICTION 01 · 6 STEPS / ~60s</span>
+          <h3>频繁切终端手敲命令</h3>
+          <div class="p-code">$ cd ~/innate/references/skills<br>$ git clone https://github.com/...<br><span style="color:#94a3b8"># 翻目录 · 拼路径 · 打断浏览心流</span></div>
+        </div>
+
+        <div class="pain-card" id="pcard-2" style="left: 740px; top: 145px">
+          <span class="p-tag">FRICTION 02 · NETWORK DROP</span>
+          <h3>大仓库慢网中途断流</h3>
+          <div class="p-code">Receiving objects: 83% (7267/8723)<br><span class="err">fatal: early EOF</span><br><span class="err">invalid index-pack output</span></div>
+        </div>
+
+        <div class="pain-card" id="pcard-3" style="left: 1290px; top: 175px">
+          <span class="p-tag">FRICTION 03 · SILOED BOOKMARKS</span>
+          <h3>好文与工具站散落吃灰</h3>
+          <div class="p-code">Chrome Bookmarks (418 未读)<br><span style="color:#fca5a5">✗ 本地 AI Agent 无法检索引用</span><br><span style="color:#fca5a5">✗ 待克隆站点缺少统一登记</span></div>
+        </div>
+
+        <div class="hero-reveal-box" id="hero-reveal">
+          <div class="keycap-pair">
+            <div class="keycap" id="key-alt">Alt</div>
+            <span class="key-plus">+</span>
+            <div class="keycap" id="key-r">R</div>
+          </div>
+          <div class="hero-brand-row">
+            <div class="hero-logo">C</div>
+            <div class="hero-brand-title">KeepIt</div>
+          </div>
+          <div class="hero-brand-sub">GitHub 浅克隆 · 稍后读 · 网站克隆 —— 一键归档本地 references/</div>
+        </div>
+      </div>
+
+      <!-- ===== ACT 2: REAL TERMINAL + 3-LAYER CONFIG ===== -->
+      <div class="act-layer" data-act="02-daemon" id="layer-02">
+        <div class="term-win">
+          <div class="term-bar">
+            <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
+            <span class="term-title">zsh — ~/innate/innate-tools/repo-cloner</span>
+          </div>
+          <div class="term-body" id="term-content"></div>
+        </div>
+
+        <div class="cfg-stack" id="cfg-stack">
+          <div class="cfg-card" id="cfg-1">
+            <div class="c-kicker">PRIORITY 01 · CLI FLAGS</div>
+            <h4>命令行参数实时覆盖</h4>
+            <p>--workspace · --mirror · --retry 3 · --max-concurrent 5</p>
+          </div>
+          <div class="cfg-card" id="cfg-2">
+            <div class="c-kicker">PRIORITY 02 · ENVIRONMENT</div>
+            <h4>KEEPIT_* 环境变量</h4>
+            <p>KEEPIT_WORKSPACE · KEEPIT_PORT=7420 · KEEPIT_PROXY</p>
+          </div>
+          <div class="cfg-card" id="cfg-3">
+            <div class="c-kicker">PRIORITY 03 · CONFIG JSON</div>
+            <h4>keepit.config.json</h4>
+            <p>install.sh · service.sh · HTTP 服务 · CLI 四端共用 server/core.mjs</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ACTS 3, 4, 5: SHARED BROWSER + REAL LIFTED POPUP STAGE ===== -->
+      <div class="act-layer" data-act="browser-stage" data-acts="03-clone,04-retry,05-collect" id="layer-browser">
+        <div class="browser-win">
+          <div class="b-chrome">
+            <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
+            <div class="b-omnibox">
+              <span class="b-lock">🔒</span>
+              <span id="b-url">https://github.com/Moh4696/cinematic-skill</span>
+            </div>
+            <div class="b-ext-slot">
+              <span class="b-key-hint" id="b-shortcut">Alt + R</span>
+              <div class="b-ext-btn" id="b-ext-icon">C</div>
+            </div>
+          </div>
+
+          <div class="b-page" id="b-page-gh">
+            <div class="gh-repo-header">
+              <span class="gh-owner">Moh4696</span>
+              <span class="gh-slash">/</span>
+              <span class="gh-name">cinematic-skill</span>
+              <span class="gh-public">Public</span>
+            </div>
+            <p class="gh-desc">Makes narrated cinematic films entirely from code: camera, spotlight, beat table, sound effects and parallel MP4 render.</p>
+            <div class="gh-files">
+              <div class="gh-file-row"><span>📁 skills/cinematic-film</span><span>Camera, spotlight &amp; beat engine</span></div>
+              <div class="gh-file-row"><span>📄 SKILL.md</span><span>Story shapes &amp; 4-act launch workflow</span></div>
+              <div class="gh-file-row"><span>📄 README.md</span><span>Zero-boilerplate code film guide</span></div>
+            </div>
+          </div>
+
+          <div class="b-page" id="b-page-web" style="display:none">
+            <div class="web-article">
+              <span class="web-pill" id="web-badge">TECHNICAL ARTICLE · ENGINEERING</span>
+              <h2 id="web-heading">Deterministic Camera Rigs for Product Launch Videos</h2>
+              <p id="web-summary">How pure-time functions, spring-damped focal zoom, and lifted DOM surfaces turn ordinary software walkthroughs into tactile films.</p>
+              <div class="web-code-card">camera.shot({ cx: 1472, cy: 401, zoom: 2.15, tiltX: 4.5, tiltY: -8.5 });<br>// Keep the trigger and the result; compress the wait.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lifted KeepIt Popup -->
+        <div class="keepit-popup" id="popup-box">
+          <div class="cp-header">
+            <div class="cp-logo">C</div>
+            <h1>KeepIt</h1>
+            <div class="cp-ws" id="cp-ws-name">innate</div>
+          </div>
+          <div class="cp-tabs">
+            <div class="cp-tab on" id="ptab-clone">Clone</div>
+            <div class="cp-tab" id="ptab-collect">稍后读</div>
+            <div class="cp-tab" id="ptab-website">克隆网站</div>
+            <div class="cp-tab" id="ptab-history">历史 / 进度 <span class="cp-badge" id="p-fail-badge">2</span></div>
+          </div>
+
+          <!-- Panel: Clone -->
+          <div class="cp-main" id="ppanel-clone">
+            <div class="cp-card">
+              <div class="cp-repo-name">Moh4696/cinematic-skill</div>
+              <div class="cp-repo-url">https://github.com/Moh4696/cinematic-skill</div>
+            </div>
+            <span class="cp-lbl">CLONE 到类别</span>
+            <div class="cp-cats">
+              <span class="cp-chip" id="chip-skills">skills</span>
+              <span class="cp-chip" id="chip-plugins">plugins</span>
+              <span class="cp-chip" id="chip-products">products</span>
+              <span class="cp-chip" id="chip-others">others</span>
+            </div>
+            <div class="cp-actions">
+              <div class="cp-btn-pri disabled" id="btn-clone-go">Clone</div>
+              <div class="cp-btn-ghost">复制命令</div>
+            </div>
+            <div class="cp-status" id="clone-toast" style="display:none">✓ 已入队 (job-mx0d-39) → references/skills/cinematic-skill</div>
+          </div>
+
+          <!-- Panel: History / Retry -->
+          <div class="cp-main" id="ppanel-history" style="display:none">
+            <div class="cp-conc-bar">
+              <span class="cp-pill" id="hist-conc">并发 3/5</span>
+              <div class="cp-retry-all" id="btn-retry-all">↻ 重试全部失败 (2)</div>
+            </div>
+            <div class="cp-cats" style="margin-bottom:8px;gap:5px">
+              <span class="cp-chip on" id="hf-all" style="font-size:11px;padding:2px 8px">全部</span>
+              <span class="cp-chip" id="hf-failed" style="font-size:11px;padding:2px 8px">失败 (2)</span>
+              <span class="cp-chip" id="hf-active" style="font-size:11px;padding:2px 8px">进行中</span>
+              <span class="cp-chip" id="hf-done" style="font-size:11px;padding:2px 8px">已完成</span>
+            </div>
+            <div class="cp-status" id="hist-toast" style="display:none;margin-top:0;margin-bottom:8px"></div>
+            <div id="hist-cards"></div>
+          </div>
+
+          <!-- Panel: Collect & Clone-Website -->
+          <div class="cp-main" id="ppanel-collect" style="display:none">
+            <div class="cp-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <span class="cp-repo-name" id="col-card-title" style="font-size:12.5px">Deterministic Camera Rigs</span>
+                <span class="cp-pill" id="col-card-pill">collection</span>
+              </div>
+              <div class="cp-repo-url" id="col-card-url">https://motion.dev/blog/camera-rigs</div>
+            </div>
+            <span class="cp-lbl" id="col-field1-lbl">标题 (自动识别网页标题)</span>
+            <div class="cp-input autofill" id="col-field1">Deterministic Camera Rigs for Launch Videos</div>
+            <span class="cp-lbl" id="col-field2-lbl">目录名 / 备注</span>
+            <div class="cp-input" id="col-field2">镜头运镜与弹簧阻尼参考</div>
+            <div class="cp-actions">
+              <div class="cp-btn-pri" id="btn-col-go">稍后读</div>
+              <div class="cp-btn-ghost">刷新列表</div>
+            </div>
+            <div class="cp-status" id="col-toast" style="display:none"></div>
+            <span class="cp-lbl" style="margin-top:10px">本地记录 (server/collected.json)</span>
+            <div id="col-items"></div>
+          </div>
+
+          <div class="cp-footer">
+            <span class="cp-dot"></span>
+            <span id="cp-srv-txt">服务在线 (innate · :7420)</span>
+          </div>
+        </div>
+
+        <div class="kinetic-callout" id="browser-callout" style="left: 250px; top: 760px; display:none"></div>
+      </div>
+
+      <!-- ===== ACT 6: 3D PULL-BACK ARCHITECTURE & END CARD ===== -->
+      <div class="act-layer" data-act="06-outro" id="layer-06">
+        <div class="arch-stage">
+          <div class="arch-flow" id="arch-flow">
+            <div class="arch-node">
+              <div class="a-step">01 · BROWSER EXTENSION (MV3)</div>
+              <h3>一键捕获浏览意图</h3>
+              <p>自动解析 GitHub 仓库与当前网页 URL，零构建原生加载，支持离线复制命令兜底。</p>
+            </div>
+            <div class="arch-arrow">━━▶</div>
+            <div class="arch-node" style="border-color: rgba(52, 211, 153, 0.7); box-shadow: 0 28px 75px rgba(16,185,129,0.22)">
+              <div class="a-step">02 · COMPANION CORE (127.0.0.1:7420)</div>
+              <h3>5 路并发队列 + 抗断流重试</h3>
+              <p>HTTP 服务、CLI 与运维脚本四端共用 server/core.mjs；HTTPS / SSH-443 / HTTP1.1 自动切换。</p>
+            </div>
+            <div class="arch-arrow">━━▶</div>
+            <div class="arch-node">
+              <div class="a-step">03 · LOCAL KNOWLEDGE ASSETS</div>
+              <h3>结构化落盘本地仓库</h3>
+              <p>代码仓浅克隆入 references/&lt;category&gt;/，好文与待克隆站点分类沉淀入 collected.json。</p>
+            </div>
+          </div>
+
+          <div class="metrics-strip">
+            <div class="metric-pill">
+              <div class="m-val" id="m-repos">33+</div>
+              <div class="m-lbl">真实开源仓库已落盘 references/</div>
+            </div>
+            <div class="metric-pill">
+              <div class="m-val" id="m-urls">30</div>
+              <div class="m-lbl">精选文章与待克隆站点已归档</div>
+            </div>
+            <div class="metric-pill">
+              <div class="m-val">0</div>
+              <div class="m-lbl">第三方 npm 依赖 · 纯原生 Node ≥ 18</div>
+            </div>
+          </div>
+
+          <div class="end-lockup">
+            <div class="hero-logo">C</div>
+            <div>
+              <div style="font-size:36px;font-weight:800;color:#fff;letter-spacing:-0.5px">KeepIt</div>
+              <div style="font-size:16px;color:#a7f3d0">让每一次浏览，都沉淀为本地 AI 可直接读取的知识资产</div>
+            </div>
+            <div class="cmd-pill">./scripts/install.sh &nbsp;·&nbsp; Alt + R</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- World-space cursor & click ripple (guaranteed pixel-exact on 3D tilted targets) -->
+      <div id="click-ring"></div>
+      <div id="world-cursor" style="opacity:0">
+        <svg viewBox="0 0 28 28" width="34" height="34">
+          <path d="M4 2 L4 23 L9.6 17.8 L13.8 26 L17.2 24.4 L13 16.2 L20.5 16.2 Z"
+                fill="#ffffff" stroke="#062016" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="spotlight"></div>
+  <div id="caption-wrap"><div id="caption-pill"></div></div>
+  <div id="film-bar"></div>
+
+  <div id="preview-hud">
+    <button id="btnPlayAll">▶ 播放宣传片运镜</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  if (new URLSearchParams(location.search).get('capture') === '1') {
+    document.body.classList.add('capture');
+  }
+
+  const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smooth = (t) => { const x = clamp(t); return x * x * (3 - 2 * x); };
+  const easeOutCubic = (t) => 1 - Math.pow(1 - clamp(t), 3);
+  const easeInOutCubic = (t) => {
+    const x = clamp(t);
+    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  };
+  // Subtle spring overshoot for tactile UI settles
+  const springOut = (t) => {
+    const x = clamp(t);
+    return 1 - Math.exp(-6.5 * x) * Math.cos(9.5 * x);
+  };
+  const seg = (p, a, b) => clamp((p - a) / Math.max(0.0001, b - a));
+
+  let FACTS = { jobsTotal: 38, jobsDone: 33, colTotal: 30, colCollection: 23, colClone: 7 };
+  window.setPromoFacts = function(f) {
+    FACTS = { ...FACTS, ...(f || {}) };
+  };
+
+  function interpCam(keys, p) {
+    if (p <= keys[0].p) return { ...keys[0] };
+    for (let i = 0; i < keys.length - 1; i++) {
+      const a = keys[i], b = keys[i + 1];
+      if (p <= b.p) {
+        const u = easeInOutCubic(seg(p, a.p, b.p));
+        return {
+          cx: lerp(a.cx, b.cx, u),
+          cy: lerp(a.cy, b.cy, u),
+          zoom: lerp(a.zoom, b.zoom, u),
+          rx: lerp(a.rx || 0, b.rx || 0, u),
+          ry: lerp(a.ry || 0, b.ry || 0, u),
+          rz: lerp(a.rz || 0, b.rz || 0, u),
+          dim: lerp(a.dim ?? 0.3, b.dim ?? 0.3, u),
+          spotR: lerp(a.spotR ?? 560, b.spotR ?? 560, u),
+        };
+      }
+    }
+    return { ...keys[keys.length - 1] };
+  }
+
+  function applyCamera(cam) {
+    const pivot = document.getElementById('cam-pivot');
+    const world = document.getElementById('world');
+    pivot.style.transform =
+      `scale(${cam.zoom.toFixed(4)}) rotateX(${cam.rx.toFixed(3)}deg) rotateY(${cam.ry.toFixed(3)}deg) rotateZ(${cam.rz.toFixed(3)}deg)`;
+    world.style.transform =
+      `translate3d(${(-cam.cx).toFixed(2)}px, ${(-cam.cy).toFixed(2)}px, 0)`;
+
+    const sp = document.getElementById('spotlight');
+    sp.style.background =
+      `radial-gradient(circle ${Math.round(cam.spotR)}px at 960px 540px, rgba(0,0,0,0) 36%, rgba(3,9,7,${cam.dim.toFixed(3)}) 100%)`;
+  }
+
+  function placeCursorArc(keys, clicks, p, zoom, visible = true) {
+    const curEl = document.getElementById('world-cursor');
+    const ringEl = document.getElementById('click-ring');
+    if (!visible || !keys.length) {
+      curEl.style.opacity = '0';
+      ringEl.style.opacity = '0';
+      return;
+    }
+    curEl.style.opacity = '1';
+    let x = keys[0].x, y = keys[0].y;
+    for (let i = 0; i < keys.length - 1; i++) {
+      const a = keys[i], b = keys[i + 1];
+      if (p >= a.p && p <= b.p) {
+        const t = easeInOutCubic(seg(p, a.p, b.p));
+        // Add subtle perpendicular arc bow for natural hand motion
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const arc = Math.sin(t * Math.PI) * (b.bow ?? -0.12);
+        x = lerp(a.x, b.x, t) - dy * arc;
+        y = lerp(a.y, b.y, t) + dx * arc;
+        break;
+      } else if (p > b.p) {
+        x = b.x; y = b.y;
+      }
+    }
+
+    let press = 1;
+    let ringAlpha = 0, ringScale = 0.4;
+    for (const c of clicks) {
+      const dt = p - c;
+      if (dt >= 0 && dt < 0.11) {
+        const q = dt / 0.11;
+        press = 1 - 0.16 * Math.sin(q * Math.PI);
+        ringAlpha = (1 - q) * 0.95;
+        ringScale = 0.35 + q * 1.35;
+      }
+    }
+    const invScale = press / Math.pow(Math.max(1, zoom), 0.38);
+    curEl.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 2px) scale(${invScale.toFixed(3)})`;
+    ringEl.style.opacity = ringAlpha.toFixed(3);
+    ringEl.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 1px) scale(${ringScale.toFixed(3)})`;
+  }
+
+  function showOnlyLayer(layerId) {
+    document.querySelectorAll('.act-layer').forEach((el) => {
+      el.classList.toggle('on', el.id === layerId);
+    });
+  }
+
+  // ==================== ACT RENDERERS ====================
+
+  function renderAct1(p) {
+    showOnlyLayer('layer-01');
+    const revealU = smooth(seg(p, 0.40, 0.56));
+    ['pcard-1', 'pcard-2', 'pcard-3'].forEach((id, idx) => {
+      const el = document.getElementById(id);
+      const enter = easeOutCubic(seg(p, idx * 0.08, idx * 0.08 + 0.18));
+      const fadeBack = 1 - revealU * 0.78;
+      const lift = (1 - enter) * 40 - revealU * 55;
+      el.style.opacity = (enter * fadeBack).toFixed(3);
+      el.style.transform = `translate3d(0, ${lift.toFixed(1)}px, ${(-revealU * 140).toFixed(1)}px) scale(${(1 - revealU * 0.1).toFixed(3)})`;
+    });
+
+    const hero = document.getElementById('hero-reveal');
+    const hIn = springOut(seg(p, 0.42, 0.64));
+    hero.style.opacity = clamp(seg(p, 0.42, 0.54)).toFixed(3);
+    hero.style.transform = `translate3d(0, ${((1 - hIn) * 55).toFixed(1)}px, 30px) scale(${(0.88 + 0.12 * hIn).toFixed(3)})`;
+
+    const pressed = p >= 0.56 && p <= 0.70;
+    document.getElementById('key-alt').classList.toggle('pressed', pressed);
+    document.getElementById('key-r').classList.toggle('pressed', pressed);
+
+    const cam = interpCam([
+      { p: 0.00, cx: 560,  cy: 300, zoom: 1.42, rx: 9,  ry: -11, rz: -1.0, dim: 0.38, spotR: 540 },
+      { p: 0.22, cx: 960,  cy: 280, zoom: 1.45, rx: 8,  ry: 0,   rz: 0.0,  dim: 0.36, spotR: 560 },
+      { p: 0.40, cx: 1360, cy: 300, zoom: 1.38, rx: 8,  ry: 11,  rz: 1.0,  dim: 0.38, spotR: 540 },
+      { p: 0.56, cx: 960,  cy: 560, zoom: 1.66, rx: 4,  ry: -4,  rz: -0.4, dim: 0.48, spotR: 500 },
+      { p: 1.00, cx: 960,  cy: 565, zoom: 1.78, rx: 2,  ry: 3,   rz: 0.2,  dim: 0.44, spotR: 540 },
+    ], p);
+    applyCamera(cam);
+    placeCursorArc([], [], p, cam.zoom, false);
+  }
+
+  function renderAct2(p) {
+    showOnlyLayer('layer-02');
+    const cmd1 = './scripts/install.sh --autostart';
+    const typed1 = cmd1.slice(0, Math.floor(cmd1.length * seg(p, 0.03, 0.20)));
+    const cmd2 = 'node server/keepit-cli.mjs clone https://github.com/JimLiu/open-artifact --category plugins';
+    const typed2 = cmd2.slice(0, Math.floor(cmd2.length * seg(p, 0.50, 0.70)));
+    const pct = Math.min(100, Math.round(seg(p, 0.72, 0.86) * 100));
+
+    let html = `<div><span class="t-prompt">➜ repo-cloner</span> <span class="t-cmd">${typed1}</span>${p < 0.21 ? '<span class="t-caret"></span>' : ''}</div>`;
+    if (p >= 0.21) {
+      html += `<div class="t-dim">[check] node v22.14.0 · git 2.47 · curl 8.7 ✓</div>`;
+    }
+    if (p >= 0.28) {
+      html += `<div class="t-ok">✓ KeepIt 守护进程已启动: http://127.0.0.1:7420 (workspace: /Users/patrick/innate)</div>`;
+      html += `<div class="t-dim">  config: CLI &gt; KEEPIT_* env &gt; keepit.config.json · maxConcurrent=5</div><br>`;
+    }
+    if (p >= 0.48) {
+      html += `<div><span class="t-prompt">➜ innate</span> <span class="t-cmd">${typed2}</span>${p < 0.71 ? '<span class="t-caret"></span>' : ''}</div>`;
+    }
+    if (p >= 0.72 && p < 0.87) {
+      html += `<div class="t-hi">Receiving objects: ${pct}% (${Math.round(pct * 4.2)}/420), 6.8 MiB | 5.4 MiB/s</div>`;
+    }
+    if (p >= 0.87) {
+      html += `<div class="t-ok">✅ clone OK in 2.1s → /Users/patrick/innate/references/plugins/open-artifact</div>`;
+    }
+    document.getElementById('term-content').innerHTML = html;
+
+    ['cfg-1', 'cfg-2', 'cfg-3'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      const u = springOut(seg(p, 0.24 + i * 0.07, 0.42 + i * 0.07));
+      el.style.opacity = clamp(seg(p, 0.24 + i * 0.07, 0.34 + i * 0.07)).toFixed(3);
+      el.style.transform = `translate3d(${((1 - u) * 45).toFixed(1)}px, 0, ${(i * 12).toFixed(0)}px)`;
+    });
+
+    const cam = interpCam([
+      { p: 0.00, cx: 650,  cy: 300, zoom: 1.72, rx: 7,  ry: 10,  rz: -0.6, dim: 0.38, spotR: 540 },
+      { p: 0.28, cx: 720,  cy: 340, zoom: 1.56, rx: 6,  ry: 6,   rz: -0.3, dim: 0.34, spotR: 580 },
+      { p: 0.44, cx: 1260, cy: 420, zoom: 1.42, rx: 5,  ry: -9,  rz: 0.5,  dim: 0.34, spotR: 580 },
+      { p: 0.62, cx: 690,  cy: 470, zoom: 1.76, rx: 5,  ry: 8,   rz: -0.4, dim: 0.40, spotR: 540 },
+      { p: 1.00, cx: 720,  cy: 520, zoom: 1.84, rx: 3,  ry: 5,   rz: -0.2, dim: 0.42, spotR: 540 },
+    ], p);
+    applyCamera(cam);
+    placeCursorArc([], [], p, cam.zoom, false);
+  }
+
+  function setPopupTab(tab) {
+    ['clone', 'collect', 'website', 'history'].forEach((k) => {
+      document.getElementById('ptab-' + k).classList.toggle('on', k === tab);
+    });
+    document.getElementById('ppanel-clone').style.display = tab === 'clone' ? '' : 'none';
+    document.getElementById('ppanel-history').style.display = tab === 'history' ? '' : 'none';
+    document.getElementById('ppanel-collect').style.display = (tab === 'collect' || tab === 'website') ? '' : 'none';
+  }
+
+  function renderAct3(p) {
+    showOnlyLayer('layer-browser');
+    document.getElementById('b-url').textContent = 'https://github.com/Moh4696/cinematic-skill';
+    document.getElementById('b-page-gh').style.display = '';
+    document.getElementById('b-page-web').style.display = 'none';
+    document.getElementById('p-fail-badge').style.display = '';
+    document.getElementById('p-fail-badge').textContent = '2';
+
+    const popOpen = p >= 0.14;
+    const popEl = document.getElementById('popup-box');
+    const popScale = popOpen ? springOut(seg(p, 0.14, 0.28)) : 0;
+    popEl.style.opacity = popOpen ? clamp(seg(p, 0.14, 0.20)).toFixed(3) : '0';
+    popEl.style.transform = `scale(${(0.86 + 0.14 * popScale).toFixed(3)})`;
+    document.getElementById('b-ext-icon').classList.toggle('ring', p >= 0.10 && p <= 0.26);
+
+    setPopupTab('clone');
+    const pickedSkills = p >= 0.42;
+    document.getElementById('chip-skills').classList.toggle('on', pickedSkills);
+    const cloneBtn = document.getElementById('btn-clone-go');
+    cloneBtn.classList.toggle('disabled', !pickedSkills);
+    cloneBtn.classList.toggle('pressed', p >= 0.62 && p <= 0.69);
+    document.getElementById('clone-toast').style.display = p >= 0.66 ? '' : 'none';
+
+    const callout = document.getElementById('browser-callout');
+    if (p >= 0.70) {
+      callout.style.display = '';
+      callout.textContent = '⚡ 6 步手动操作 → 1 次点击入队 (~2s)';
+      callout.style.opacity = clamp(seg(p, 0.70, 0.80)).toFixed(3);
+    } else {
+      callout.style.display = 'none';
+    }
+
+    const cam = interpCam([
+      { p: 0.00, cx: 820,  cy: 320, zoom: 1.24, rx: 6,   ry: -6,  rz: -0.4, dim: 0.26, spotR: 640 },
+      { p: 0.16, cx: 1460, cy: 250, zoom: 1.75, rx: 5,   ry: -9,  rz: -0.6, dim: 0.38, spotR: 520 },
+      { p: 0.36, cx: 1510, cy: 365, zoom: 2.14, rx: 4.5, ry: -8,  rz: -0.5, dim: 0.44, spotR: 470 },
+      { p: 0.66, cx: 1505, cy: 405, zoom: 2.20, rx: 3.5, ry: -7,  rz: -0.4, dim: 0.45, spotR: 470 },
+      { p: 1.00, cx: 1495, cy: 415, zoom: 2.08, rx: 3.0, ry: -5,  rz: -0.2, dim: 0.40, spotR: 500 },
+    ], p);
+    applyCamera(cam);
+
+    placeCursorArc([
+      { p: 0.02, x: 980,  y: 310 },
+      { p: 0.13, x: 1692, y: 126, bow: -0.14 },
+      { p: 0.41, x: 1366, y: 353, bow: 0.15 },
+      { p: 0.62, x: 1472, y: 401, bow: -0.12 },
+      { p: 1.00, x: 1525, y: 448, bow: 0.06 },
+    ], [0.13, 0.41, 0.62], p, cam.zoom, true);
+  }
+
+  function renderAct4(p) {
+    showOnlyLayer('layer-browser');
+    document.getElementById('b-url').textContent = 'https://github.com/Moh4696/cinematic-skill';
+    document.getElementById('b-page-gh').style.display = '';
+    document.getElementById('b-page-web').style.display = 'none';
+    document.getElementById('browser-callout').style.display = 'none';
+
+    const popEl = document.getElementById('popup-box');
+    popEl.style.opacity = '1';
+    popEl.style.transform = 'scale(1)';
+
+    const onHist = p >= 0.10;
+    setPopupTab(onHist ? 'history' : 'clone');
+
+    const filterFailed = p >= 0.26 && p < 0.48;
+    const retried = p >= 0.48;
+    const done = p >= 0.82;
+    const prog1 = done ? 100 : retried ? Math.min(99, Math.round(14 + seg(p, 0.48, 0.82) * 86)) : 73;
+    const prog2 = done ? 100 : retried ? Math.min(99, Math.round(22 + seg(p, 0.50, 0.82) * 78)) : 65;
+
+    const badge = document.getElementById('p-fail-badge');
+    badge.style.display = retried ? 'none' : '';
+    badge.textContent = '2';
+
+    document.getElementById('hf-all').classList.toggle('on', !filterFailed);
+    document.getElementById('hf-failed').classList.toggle('on', filterFailed);
+    document.getElementById('hf-failed').textContent = retried ? '失败' : '失败 (2)';
+    document.getElementById('btn-retry-all').style.display = retried ? 'none' : '';
+    document.getElementById('hist-conc').textContent = done ? '并发 0/5' : retried ? '并发 2/5' : '并发 1/5';
+
+    const toast = document.getElementById('hist-toast');
+    if (retried) {
+      toast.style.display = '';
+      toast.textContent = done
+        ? '✓ 2 个重试任务已全部完成落盘 (SSH-443 抗断流通道)'
+        : '↻ 已原位重入队列 2 个任务 — 自动切换 SSH-443 抗断流通道';
+    } else {
+      toast.style.display = 'none';
+    }
+
+    const stClass = done ? 'done' : retried ? 'running' : 'failed';
+    const stIcon = done ? '✅' : retried ? '🔄' : '❌';
+    const stText1 = done ? 'done · clone OK' : retried ? `running · ${prog1}%` : 'failed';
+    const stText2 = done ? 'done · clone OK' : retried ? `running · ${prog2}%` : 'failed';
+
+    let cardsHtml = `
+      <div class="cp-job ${stClass}">
+        <div class="cp-jhead">
+          <span>${stIcon}</span><span class="cp-jname">autoclip</span>
+          <span class="cp-jstatus">${stText1}</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:4px">
+          <span class="cp-pill gray">products</span>
+          ${retried ? '<span class="cp-pill">SSH-443 原位重试</span>' : ''}
+        </div>
+        <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${prog1}%"></div></div>
+        ${!retried ? '<div class="cp-jerr">git clone failed: unexpected disconnect | fatal: early EOF</div>' : ''}
+      </div>
+      <div class="cp-job ${stClass}">
+        <div class="cp-jhead">
+          <span>${stIcon}</span><span class="cp-jname">MROffice</span>
+          <span class="cp-jstatus">${stText2}</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:4px">
+          <span class="cp-pill gray">products</span>
+          ${retried ? '<span class="cp-pill">SSH-443 原位重试</span>' : ''}
+        </div>
+        <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${prog2}%"></div></div>
+        ${!retried ? '<div class="cp-jerr">git clone failed: unexpected disconnect | fatal: early EOF</div>' : ''}
+      </div>`;
+    if (!filterFailed) {
+      cardsHtml += `
+      <div class="cp-job done">
+        <div class="cp-jhead"><span>✅</span><span class="cp-jname">cinematic-skill</span><span class="cp-jstatus">done · 100%</span></div>
+        <div class="cp-bar-track"><div class="cp-bar-fill" style="width:100%"></div></div>
+      </div>`;
+    }
+    document.getElementById('hist-cards').innerHTML = cardsHtml;
+
+    const cam = interpCam([
+      { p: 0.00, cx: 1530, cy: 295, zoom: 2.15, rx: 4.5, ry: 6,  rz: 0.4, dim: 0.42, spotR: 470 },
+      { p: 0.30, cx: 1515, cy: 365, zoom: 2.22, rx: 4.0, ry: 7,  rz: 0.5, dim: 0.45, spotR: 460 },
+      { p: 0.52, cx: 1525, cy: 350, zoom: 2.24, rx: 3.5, ry: 5,  rz: 0.3, dim: 0.46, spotR: 460 },
+      { p: 0.82, cx: 1520, cy: 435, zoom: 2.18, rx: 3.0, ry: 4,  rz: 0.2, dim: 0.42, spotR: 480 },
+      { p: 1.00, cx: 1520, cy: 445, zoom: 2.12, rx: 2.5, ry: 3,  rz: 0.1, dim: 0.38, spotR: 500 },
+    ], p);
+    applyCamera(cam);
+
+    placeCursorArc([
+      { p: 0.00, x: 1525, y: 410 },
+      { p: 0.10, x: 1660, y: 221, bow: -0.14 },
+      { p: 0.26, x: 1424, y: 299, bow: 0.12 },
+      { p: 0.47, x: 1612, y: 266, bow: -0.14 },
+      { p: 1.00, x: 1545, y: 430, bow: 0.08 },
+    ], [0.10, 0.26, 0.47], p, cam.zoom, true);
+  }
+
+  function renderAct5(p) {
+    showOnlyLayer('layer-browser');
+    document.getElementById('b-page-gh').style.display = 'none';
+    document.getElementById('b-page-web').style.display = '';
+    document.getElementById('p-fail-badge').style.display = 'none';
+    document.getElementById('browser-callout').style.display = 'none';
+
+    const popEl = document.getElementById('popup-box');
+    popEl.style.opacity = '1';
+    popEl.style.transform = 'scale(1)';
+
+    const isSiteMode = p >= 0.46;
+    setPopupTab(isSiteMode ? 'website' : 'collect');
+
+    if (!isSiteMode) {
+      document.getElementById('b-url').textContent = 'https://motion.dev/blog/camera-rigs';
+      document.getElementById('web-badge').textContent = 'TECHNICAL ARTICLE · ENGINEERING';
+      document.getElementById('web-heading').textContent = 'Deterministic Camera Rigs for Product Launch Videos';
+      document.getElementById('col-card-title').textContent = 'Deterministic Camera Rigs';
+      document.getElementById('col-card-pill').textContent = 'collection';
+      document.getElementById('col-card-url').textContent = 'https://motion.dev/blog/camera-rigs';
+      document.getElementById('col-field1-lbl').textContent = '标题 (已自动带入当前网页标题)';
+      document.getElementById('col-field1').textContent = 'Deterministic Camera Rigs for Launch Videos';
+      document.getElementById('col-field2-lbl').textContent = '备注 (可选)';
+      document.getElementById('col-field2').textContent = '产品宣传片镜头语言参考';
+      document.getElementById('btn-col-go').textContent = '稍后读';
+    } else {
+      document.getElementById('b-url').textContent = 'https://screen.studio/guide';
+      document.getElementById('web-badge').textContent = 'INTERACTIVE TOOL SITE · REFERENCE';
+      document.getElementById('web-heading').textContent = 'Screen Studio — Motion & Zoom Interactive Guide';
+      document.getElementById('col-card-title').textContent = 'Screen Studio Interactive Guide';
+      document.getElementById('col-card-pill').textContent = 'clone';
+      document.getElementById('col-card-url').textContent = 'https://screen.studio/guide';
+      document.getElementById('col-field1-lbl').textContent = '站点地址 (自动识别当前页网址，可修改)';
+      document.getElementById('col-field1').textContent = 'https://screen.studio/guide';
+      document.getElementById('col-field2-lbl').textContent = '目标目录 (自动推导)';
+      document.getElementById('col-field2').textContent = 'references/websites/screen.studio-guide';
+      document.getElementById('btn-col-go').textContent = '克隆网站';
+    }
+
+    const colSaved = p >= 0.28 && !isSiteMode;
+    const siteSaved = p >= 0.70 && isSiteMode;
+    const toast = document.getElementById('col-toast');
+    if (colSaved) {
+      toast.style.display = '';
+      toast.textContent = '✓ 已写入 collected.json [category: collection]';
+    } else if (siteSaved) {
+      toast.style.display = '';
+      toast.textContent = '✓ 已登记 collected.json [category: clone]';
+    } else {
+      toast.style.display = 'none';
+    }
+
+    let items = '';
+    if (p >= 0.70) {
+      items += `<div class="cp-job"><div class="cp-jhead"><span class="cp-pill gray">clone</span><span class="cp-jname">screen.studio-guide</span><span class="cp-jstatus">pending</span></div></div>`;
+    }
+    if (p >= 0.28) {
+      items += `<div class="cp-job"><div class="cp-jhead"><span class="cp-pill">collection</span><span class="cp-jname">Deterministic Camera Rigs</span><span class="cp-jstatus">pending</span></div></div>`;
+    }
+    document.getElementById('col-items').innerHTML = items;
+
+    const cam = interpCam([
+      { p: 0.00, cx: 1495, cy: 330, zoom: 2.08, rx: 4.5, ry: -7, rz: -0.4, dim: 0.40, spotR: 490 },
+      { p: 0.28, cx: 1510, cy: 425, zoom: 2.16, rx: 4.0, ry: -8, rz: -0.5, dim: 0.44, spotR: 470 },
+      { p: 0.48, cx: 1490, cy: 335, zoom: 2.04, rx: 4.5, ry: -6, rz: -0.3, dim: 0.38, spotR: 500 },
+      { p: 0.72, cx: 1515, cy: 455, zoom: 2.18, rx: 3.5, ry: -7, rz: -0.4, dim: 0.44, spotR: 470 },
+      { p: 1.00, cx: 1515, cy: 490, zoom: 2.06, rx: 3.0, ry: -5, rz: -0.2, dim: 0.38, spotR: 500 },
+    ], p);
+    applyCamera(cam);
+
+    placeCursorArc([
+      { p: 0.00, x: 1540, y: 310 },
+      { p: 0.08, x: 1473, y: 221, bow: -0.12 },
+      { p: 0.27, x: 1472, y: 452, bow: 0.14 },
+      { p: 0.46, x: 1566, y: 221, bow: -0.15 },
+      { p: 0.69, x: 1472, y: 452, bow: 0.12 },
+      { p: 1.00, x: 1530, y: 525, bow: -0.08 },
+    ], [0.08, 0.27, 0.46, 0.69], p, cam.zoom, true);
+  }
+
+  function renderAct6(p) {
+    showOnlyLayer('layer-06');
+    const countU = easeOutCubic(seg(p, 0.15, 0.62));
+    const reposTarget = FACTS.jobsDone || 33;
+    const urlsTarget = FACTS.colTotal || 30;
+    document.getElementById('m-repos').textContent = `${Math.max(12, Math.round(reposTarget * (0.4 + 0.6 * countU)))}+`;
+    document.getElementById('m-urls').textContent = `${Math.max(10, Math.round(urlsTarget * (0.4 + 0.6 * countU)))}`;
+
+    const cam = interpCam([
+      { p: 0.00, cx: 960, cy: 320, zoom: 1.72, rx: 13, ry: -10, rz: -0.8, dim: 0.42, spotR: 520 },
+      { p: 0.48, cx: 960, cy: 520, zoom: 1.08, rx: 4,  ry: 3,   rz: 0.2,  dim: 0.24, spotR: 720 },
+      { p: 0.80, cx: 960, cy: 540, zoom: 0.98, rx: 0,  ry: 0,   rz: 0.0,  dim: 0.18, spotR: 860 },
+      { p: 1.00, cx: 960, cy: 540, zoom: 1.01, rx: 0,  ry: 0,   rz: 0.0,  dim: 0.16, spotR: 900 },
+    ], p);
+    applyCamera(cam);
+    placeCursorArc([], [], p, cam.zoom, false);
+  }
+
+  const ACT_RENDERERS = {
+    '01-hook': renderAct1,
+    '02-daemon': renderAct2,
+    '03-clone': renderAct3,
+    '04-retry': renderAct4,
+    '05-collect': renderAct5,
+    '06-outro': renderAct6,
+  };
+
+  window.renderPromoAt = function(actId, p = 0, subtitle = '', globalProg = 0) {
+    const fn = ACT_RENDERERS[actId] || renderAct1;
+    fn(clamp(p));
+    const cap = document.getElementById('caption-pill');
+    cap.innerHTML = subtitle ? `<span class="cap-dot"></span><span>${subtitle}</span>` : '';
+    document.getElementById('film-bar').style.width = `${(clamp(globalProg) * 100).toFixed(2)}%`;
+  };
+
+  // Interactive browser playback for quick human preview
+  const ORDER = ['01-hook', '02-daemon', '03-clone', '04-retry', '05-collect', '06-outro'];
+  let raf = null;
+  function playPreview() {
+    if (raf) cancelAnimationFrame(raf);
+    const actDur = 9000;
+    const total = ORDER.length * actDur;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const elapsed = now - t0;
+      const idx = Math.min(ORDER.length - 1, Math.floor(elapsed / actDur));
+      const localP = clamp((elapsed - idx * actDur) / actDur);
+      window.renderPromoAt(ORDER[idx], localP, `Preview · ${ORDER[idx]}`, elapsed / total);
+      if (elapsed < total) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+  document.getElementById('btnPlayAll').onclick = playPreview;
+  window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); playPreview(); } });
+
+  // Render crisp initial frame (never blank at t=0!)
+  window.renderPromoAt('01-hook', 0.62, '按下 Alt + R · 认识 KeepIt：浏览器到本地知识库的一键收口', 0.08);
+})();
+</script>
+</body>
+</html>
