@@ -584,7 +584,7 @@
         <div class="pain-card" id="pcard-1" style="left: 190px; top: 175px">
           <span class="p-tag">FRICTION 01 · 6 STEPS / ~60s</span>
           <h3>频繁切终端手敲命令</h3>
-          <div class="p-code">$ cd ~/innate/references/skills<br>$ git clone https://github.com/...<br><span style="color:#94a3b8"># 翻目录 · 拼路径 · 打断浏览心流</span></div>
+          <div class="p-code">$ cd ~/知识库/skills<br>$ git clone https://github.com/...<br><span style="color:#94a3b8"># 翻目录 · 拼路径 · 打断浏览心流</span></div>
         </div>
 
         <div class="pain-card" id="pcard-2" style="left: 740px; top: 145px">
@@ -609,7 +609,7 @@
             <div class="hero-logo">C</div>
             <div class="hero-brand-title">KeepIt</div>
           </div>
-          <div class="hero-brand-sub">GitHub 浅克隆 · 稍后读 · 网站克隆 —— 一键归档本地 references/</div>
+          <div class="hero-brand-sub">GitHub 浅克隆 · 稍后读 · 网站克隆 —— 一键归档本地知识库</div>
         </div>
       </div>
 
@@ -637,7 +637,7 @@
           <div class="cfg-card" id="cfg-3">
             <div class="c-kicker">PRIORITY 03 · CONFIG JSON</div>
             <h4>keepit.config.json</h4>
-            <p>install.sh · service.sh · HTTP 服务 · CLI 四端共用 server/core.mjs</p>
+            <p>install.sh · service.sh · HTTP 服务 · CLI 共用同一套核心</p>
           </div>
         </div>
       </div>
@@ -713,7 +713,7 @@
               <div class="cp-btn-pri disabled" id="btn-clone-go">Clone</div>
               <div class="cp-btn-ghost">复制命令</div>
             </div>
-            <div class="cp-status" id="clone-toast" style="display:none">✓ 已入队 (job-mx0d-39) → references/skills/cinematic-skill</div>
+            <div class="cp-status" id="clone-toast" style="display:none">✓ 已入队 (job-mx0d-39) → 知识库/skills/cinematic-skill</div>
           </div>
 
           <!-- Panel: History / Retry -->
@@ -776,20 +776,20 @@
             <div class="arch-node" style="border-color: rgba(52, 211, 153, 0.7); box-shadow: 0 28px 75px rgba(16,185,129,0.22)">
               <div class="a-step">02 · COMPANION CORE (127.0.0.1:7420)</div>
               <h3>5 路并发队列 + 抗断流重试</h3>
-              <p>HTTP 服务、CLI 与运维脚本四端共用 server/core.mjs；HTTPS / SSH-443 / HTTP1.1 自动切换。</p>
+              <p>HTTP 服务、CLI 与管理脚本共用同一套核心；镜像与代理随时可配。</p>
             </div>
             <div class="arch-arrow">━━▶</div>
             <div class="arch-node">
               <div class="a-step">03 · LOCAL KNOWLEDGE ASSETS</div>
               <h3>结构化落盘本地仓库</h3>
-              <p>代码仓浅克隆入 references/&lt;category&gt;/，好文与待克隆站点分类沉淀入 collected.json。</p>
+              <p>代码仓浅克隆进本地知识库，好文与待克隆站点分类沉淀入库。</p>
             </div>
           </div>
 
           <div class="metrics-strip">
             <div class="metric-pill">
               <div class="m-val" id="m-repos">33+</div>
-              <div class="m-lbl">真实开源仓库已落盘 references/</div>
+              <div class="m-lbl">真实开源仓库已归档本地知识库</div>
             </div>
             <div class="metric-pill">
               <div class="m-val" id="m-urls">30</div>
@@ -998,7 +998,7 @@
       html += `<div class="t-hi">Receiving objects: ${pct}% (${Math.round(pct * 4.2)}/420), 6.8 MiB | 5.4 MiB/s</div>`;
     }
     if (p >= 0.87) {
-      html += `<div class="t-ok">✅ clone OK in 2.1s → /Users/patrick/innate/references/plugins/open-artifact</div>`;
+      html += `<div class="t-ok">✅ clone OK in 2.1s → ~/知识库/plugins/open-artifact</div>`;
     }
     document.getElementById('term-content').innerHTML = html;
 
@@ -1113,8 +1113,8 @@
     if (retried) {
       toast.style.display = '';
       toast.textContent = done
-        ? '✓ 2 个重试任务已全部完成落盘 (SSH-443 抗断流通道)'
-        : '↻ 已原位重入队列 2 个任务 — 自动切换 SSH-443 抗断流通道';
+        ? '✓ 2 个失败任务已自动原位重试成功'
+        : '↻ 已原位重入队列 2 个失败任务 — 自动退避重试';
     } else {
       toast.style.display = 'none';
     }
@@ -1132,7 +1132,7 @@
         </div>
         <div style="display:flex;gap:6px;margin-bottom:4px">
           <span class="cp-pill gray">products</span>
-          ${retried ? '<span class="cp-pill">SSH-443 原位重试</span>' : ''}
+          ${retried ? '<span class="cp-pill">自动原位重试</span>' : ''}
         </div>
         <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${prog1}%"></div></div>
         ${!retried ? '<div class="cp-jerr">git clone failed: unexpected disconnect | fatal: early EOF</div>' : ''}
@@ -1144,7 +1144,7 @@
         </div>
         <div style="display:flex;gap:6px;margin-bottom:4px">
           <span class="cp-pill gray">products</span>
-          ${retried ? '<span class="cp-pill">SSH-443 原位重试</span>' : ''}
+          ${retried ? '<span class="cp-pill">自动原位重试</span>' : ''}
         </div>
         <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${prog2}%"></div></div>
         ${!retried ? '<div class="cp-jerr">git clone failed: unexpected disconnect | fatal: early EOF</div>' : ''}
@@ -1212,7 +1212,7 @@
       document.getElementById('col-field1-lbl').textContent = '站点地址 (自动识别当前页网址，可修改)';
       document.getElementById('col-field1').textContent = 'https://screen.studio/guide';
       document.getElementById('col-field2-lbl').textContent = '目标目录 (自动推导)';
-      document.getElementById('col-field2').textContent = 'references/websites/screen.studio-guide';
+      document.getElementById('col-field2').textContent = '~/知识库/websites/screen.studio-guide';
       document.getElementById('btn-col-go').textContent = '克隆网站';
     }
 

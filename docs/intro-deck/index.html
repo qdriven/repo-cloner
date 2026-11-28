@@ -379,7 +379,7 @@ body.capture-mode #deck-controls { display: none !important; }
         <div class="eyebrow">BROWSER TO LOCAL KNOWLEDGE BASE · 零依赖本地伴侣</div>
         <h1 class="hero">把逛到的仓库、好文与网站<br/><span class="hl">一次点击，收进本地知识库</span></h1>
         <p class="lead" style="margin-top: 26px">
-          从浏览器页面直达本地 <span class="code-pill">references/</span> 与 <span class="code-pill">collected.json</span> ——
+          从浏览器页面一键直达本地知识库 ——
           默认浅克隆、5 路并发队列、自动识别当前网址，让外部参考资料立即可被本地 AI Agent 检索与复用。
         </p>
       </div>
@@ -387,15 +387,15 @@ body.capture-mode #deck-controls { display: none !important; }
       <div class="row-3">
         <div class="panel accent">
           <h3><span class="badge">01</span> GitHub 一键克隆</h3>
-          <p>自动解析当前 GitHub 仓库页，点选分类即入队 <span class="mono">--depth=1</span> 浅克隆，最多 5 并发 + 失败退避重试。</p>
+          <p>自动解析当前 GitHub 仓库页，点选分类即入队浅克隆，最多 5 并发 + 失败退避重试。</p>
         </div>
         <div class="panel">
-          <h3><span class="badge sky">02</span> 稍后读 · collection</h3>
-          <p>任意文章页 / X 推文自动带入标题与 URL，一键以 <span class="mono">category: "collection"</span> 落盘去重。</p>
+          <h3><span class="badge sky">02</span> 稍后读</h3>
+          <p>任意文章页 / X 推文自动带入标题与 URL，一键存入本地稍后读清单，自动去重。</p>
         </div>
         <div class="panel">
-          <h3><span class="badge warn">03</span> 克隆网站 · clone</h3>
-          <p>自动识别当前站点网址与目录名，以 <span class="mono">category: "clone"</span> 记录规划路径，留待后续统一离线化。</p>
+          <h3><span class="badge warn">03</span> 克隆网站</h3>
+          <p>自动识别当前站点网址与目录名，自动记录站点与目标目录，留待后续统一离线化。</p>
         </div>
       </div>
     </section>
@@ -416,7 +416,7 @@ body.capture-mode #deck-controls { display: none !important; }
           </div>
           <h3>手敲终端，慢网易断</h3>
           <ul>
-            <li>复制 GitHub URL → 切终端 → <span class="mono">cd references/…</span></li>
+            <li>复制 GitHub URL → 切终端 → 翻目录、拼路径</li>
             <li>纠结放进 <span class="mono">skills</span> 还是 <span class="mono">others</span> 子目录</li>
             <li>忘了加 <span class="mono">--depth=1</span>，大仓拉取漫长占空间</li>
             <li>国内网络偶发超时，中断后还得手动清理重敲</li>
@@ -445,7 +445,7 @@ body.capture-mode #deck-controls { display: none !important; }
           <ul>
             <li>看到交互惊艳的在线工具站或文档站想离线复刻</li>
             <li>和普通文章混在一起，分不清「读内容」还是「扒整站」</li>
-            <li>缺少统一的本地目标目录规划（<span class="mono">references/websites/</span>）</li>
+            <li>缺少统一的本地站点收藏登记</li>
           </ul>
         </div>
       </div>
@@ -478,7 +478,7 @@ body.capture-mode #deck-controls { display: none !important; }
         </div>
 
         <div class="panel accent">
-          <span class="badge">核心层 · server/core.mjs (0 依赖)</span>
+          <span class="badge">核心层 · 本地核心（零依赖）</span>
           <h3 style="margin-top:14px">一套内核，三端复用</h3>
           <ul>
             <li>HTTP 服务、CLI、运维脚本共用同一套解析与队列</li>
@@ -498,13 +498,13 @@ body.capture-mode #deck-controls { display: none !important; }
         <div style="display:flex;flex-direction:column;gap:22px">
           <div class="panel" style="flex:1">
             <span class="badge">通道 A · 代码参考仓</span>
-            <h3 style="margin-top:8px">references/&lt;category&gt;/&lt;repo&gt;</h3>
+            <h3 style="margin-top:8px">知识库/&lt;category&gt;/&lt;repo&gt;</h3>
             <p style="font-size:20px">默认 <span class="mono">--depth=1</span>，同源已存在则自动 <span class="mono">pull --ff-only</span>；全量历史持久化至 <span class="mono">server/jobs.json</span>。</p>
           </div>
           <div class="panel" style="flex:1">
             <span class="badge sky">通道 B · server/collected.json</span>
             <h3 style="margin-top:8px">按 category 区分两类待办</h3>
-            <p style="font-size:20px"><span class="mono">collection</span>（稍后读）与 <span class="mono">clone</span>（待克隆网站 + <span class="mono">plannedPath</span>）同库分流，状态 <span class="mono">pending</span>。</p>
+            <p style="font-size:20px">稍后读与待克隆站两条记录同库分流，登记后统一等待后续处理。</p>
           </div>
         </div>
       </div>
@@ -691,7 +691,7 @@ body.capture-mode #deck-controls { display: none !important; }
         <div class="kpi">
           <div class="num" id="factJobs">25 次</div>
           <div class="lbl">真实 GitHub 克隆任务</div>
-          <div class="sub" id="factJobsSub">22 个参考仓已成功落盘 references/</div>
+          <div class="sub" id="factJobsSub">22 个参考仓已归档本地知识库</div>
         </div>
         <div class="kpi">
           <div class="num" id="factCol">30 条</div>
@@ -704,9 +704,9 @@ body.capture-mode #deck-controls { display: none !important; }
         <div class="panel">
           <h3>✂️ 工程与文档减掉了什么？</h3>
           <ul>
-            <li><strong>减掉多处重复逻辑</strong>：HTTP 服务、CLI、启停脚本统一收口到单文件 <span class="mono">server/core.mjs</span></li>
+            <li><strong>减掉多处重复逻辑</strong>：HTTP 服务、CLI、启停脚本统一收口到同一套本地核心</li>
             <li><strong>减掉配置割裂</strong>：命令行参数、环境变量 <span class="mono">KEEPIT_*</span>、<span class="mono">keepit.config.json</span> 合并为一套解析</li>
-            <li><strong>减掉 62% 文档冗余</strong>：README 从 274 行精简至 ~105 行，安装与守护浓缩为两个脚本</li>
+            <li><strong>减掉收集摩擦</strong>：安装浓缩为两个脚本，安装与守护一键完成，clone 只需一次点击</li>
           </ul>
         </div>
         <div class="panel accent">
@@ -745,16 +745,17 @@ body.capture-mode #deck-controls { display: none !important; }
 
         <div class="panel accent" style="display:flex;flex-direction:column;justify-content:space-between">
           <div>
-            <span class="badge">NEXT MILESTONES · 下一步演进</span>
-            <h3 style="margin-top:14px;font-size:30px">消费 pending 队列，闭环自动化</h3>
+            <span class="badge">NEXT MILESTONES · 后续规划</span>
+            <h3 style="margin-top:14px;font-size:30px">留下来的内容，AI 接手消化</h3>
             <ul style="margin-top:14px">
-              <li><strong>collection 自动抓取</strong>：读取 <span class="mono">collected.json</span> 中待处理的文章与推文，转为本地 Markdown 归档</li>
-              <li><strong>clone 整站离线化</strong>：按已登记的 <span class="mono">plannedPath</span> 自动抓取静态资源到 <span class="mono">references/websites/</span></li>
-              <li><strong>SKILL 联动</strong>：让本地 Agent 一键调度「收集 → 抓取 → 提炼总结」全链路</li>
+              <li><strong>稍后读真的读</strong>：AI 助手读取本地清单，抓正文转 Markdown，帮你把文章真正读完</li>
+              <li><strong>整站克隆留设计</strong>：登记的好网站自动离线化，完整保留页面设计</li>
+              <li><strong>长视频提炼</strong>：太长的视频先留坐标，后续自动下载、分析、提炼要点</li>
+              <li><strong>每日总结</strong>：自动汇总当日收集，发送到微信 / 飞书</li>
             </ul>
           </div>
           <div style="font-family:var(--mono);font-size:18px;color:var(--accent-bright)">
-            innate-tools/repo-cloner · Ready on http://127.0.0.1:7420
+            KeepIt · Ready on http://127.0.0.1:7420
           </div>
         </div>
       </div>
@@ -868,7 +869,7 @@ body.capture-mode #deck-controls { display: none !important; }
           const bars = Math.floor(pct / 5);
           html += `<span class="t-hi">Receiving objects: ${String(pct).padStart(2, ' ')}% [${'█'.repeat(bars)}${'░'.repeat(20 - bars)}]</span>`;
         } else {
-          html += `<span class="t-ok">✅ clone OK in 3.8s → /Users/patrick/innate/references/skills/inkwork-mechanical-drawing</span>\n\n`;
+          html += `<span class="t-ok">✅ clone OK in 3.8s → ~/知识库/skills/inkwork-mechanical-drawing</span>\n\n`;
         }
       }
     }
@@ -881,8 +882,8 @@ body.capture-mode #deck-controls { display: none !important; }
         html += '<span class="t-cursor"></span>';
       } else {
         html += '\n<span class="t-dim">collected.json 记录 (7):</span>\n';
-        if (p >= 0.83) html += `  <span class="t-hi">[clone]</span> clw-mwyqy76y-30  https://toolbox.adipower.workers.dev\n          <span class="t-dim">→ /Users/patrick/innate/references/websites/toolbox.adipower.workers.dev</span>\n`;
-        if (p >= 0.88) html += `  <span class="t-hi">[clone]</span> clw-mwyp9k1a-19  https://ui.aceternity.com\n          <span class="t-dim">→ /Users/patrick/innate/references/websites/ui.aceternity.com</span> <span class="t-cursor"></span>`;
+        if (p >= 0.83) html += `  <span class="t-hi">[clone]</span> clw-mwyqy76y-30  https://toolbox.adipower.workers.dev\n          <span class="t-dim">→ ~/知识库/websites/toolbox.adipower.workers.dev</span>\n`;
+        if (p >= 0.88) html += `  <span class="t-hi">[clone]</span> clw-mwyp9k1a-19  https://ui.aceternity.com\n          <span class="t-dim">→ ~/知识库/websites/ui.aceternity.com</span> <span class="t-cursor"></span>`;
       }
     }
     document.getElementById('termOutput').innerHTML = html;
@@ -919,7 +920,7 @@ body.capture-mode #deck-controls { display: none !important; }
           <div class="ci-btn ${pickedSkills ? '' : 'disabled'}">Clone</div>
           <div class="ci-btn-ghost">复制命令</div>
         </div>
-        ${clickedClone ? `<div class="ci-status">✅ 已入队 (job-mwyqzyo0-23) → references/skills/inkwork-mechanical-drawing</div>` : ''}
+        ${clickedClone ? `<div class="ci-status">✅ 已入队 (job-mwyqzyo0-23) → 知识库/skills/inkwork-mechanical-drawing</div>` : ''}
       `;
     } else {
       const prog = clamp((p - 0.52) / 0.36);
@@ -1007,7 +1008,7 @@ body.capture-mode #deck-controls { display: none !important; }
       bUrl.textContent = '🔒 https://toolbox.adipower.workers.dev';
       bPage.innerHTML = `
         <div class="gh-header">🧰 ToolBox — Developer Web Utilities</div>
-        <div class="gh-desc" style="max-width:430px">轻量级在线开发者工具箱，计划将整站结构克隆至本地 references/websites/ 离线参考。</div>
+        <div class="gh-desc" style="max-width:430px">轻量级在线开发者工具箱，计划将整站结构整站克隆到本地离线参考。</div>
         <div class="gh-files" style="width:420px;margin-top:20px">
           <div class="gh-row"><span>⚡ JSON / YAML Inspector</span><span>Interactive</span></div>
           <div class="gh-row"><span>🎨 Color & SVG Lab</span><span>Zero-backend</span></div>
@@ -1047,10 +1048,10 @@ body.capture-mode #deck-controls { display: none !important; }
           <div class="ci-btn-ghost">刷新列表</div>
         </div>
         ${savedClone ? `
-          <div class="ci-status">✅ 已记录 [clone] → references/websites/toolbox.adipower.workers.dev</div>
+          <div class="ci-status">✅ 已记录 [clone] → ~/知识库/websites/toolbox.adipower.workers.dev</div>
           <div class="ci-job" style="margin-top:8px">
             <div class="ci-card-title"><span class="ci-pill gray">clone</span><span>ToolBox</span><span style="font-size:11px;color:#7d8f84">pending</span></div>
-            <div class="ci-card-sub">目标: .../references/websites/toolbox.adipower.workers.dev</div>
+            <div class="ci-card-sub">目标: ~/知识库/websites/toolbox.adipower.workers.dev</div>
           </div>
         ` : ''}
       `;
@@ -1064,7 +1065,7 @@ body.capture-mode #deck-controls { display: none !important; }
     "category": "clone",
     "url": "https://toolbox.adipower.workers.dev",
     "title": "ToolBox",
-    "plannedPath": ".../references/websites/toolbox.adipower.workers.dev",
+    "目标目录": "~/知识库/websites/toolbox.adipower.workers.dev",
     "crawlStatus": "pending"
   }</span>,\n`;
     }
@@ -1133,7 +1134,7 @@ body.capture-mode #deck-controls { display: none !important; }
 
   window.setFacts = function({ jobsTotal, jobsDone, colTotal, colCollection, colClone }) {
     if (jobsTotal != null) document.getElementById('factJobs').textContent = `${jobsTotal} 次`;
-    if (jobsDone != null) document.getElementById('factJobsSub').textContent = `${jobsDone} 个参考仓已成功落盘 references/`;
+    if (jobsDone != null) document.getElementById('factJobsSub').textContent = `${jobsDone} 个参考仓已归档本地知识库`;
     if (colTotal != null) document.getElementById('factCol').textContent = `${colTotal} 条`;
     if (colCollection != null && colClone != null) {
       document.getElementById('factColSub').textContent = `${colCollection} 条 collection + ${colClone} 个 clone 站点`;
