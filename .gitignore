@@ -1,4 +1,8 @@
 server/jobs.json
 server/collected.json
-cloneit.config.json
+keepit.config.json
 .run/
+
+# 本地视频/音频产物不入库（见 docs/README.md），构建产物只保留在本地
+docs/**/build/
+.DS_Store

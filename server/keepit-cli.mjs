@@ -1,13 +1,13 @@
-/* CloneIt CLI — zero-dependency Node ≥ 18.
+/* KeepIt CLI — zero-dependency Node ≥ 18.
  *
  * Run a clone directly to the current repo's references/, or manage the
  * companion server / job history. Designed to be invoked as a skill:
  *
- *   node clone-it/server/clone-it-cli.mjs clone <url> [options]
- *   node clone-it/server/clone-it-cli.mjs list [options]
- *   node clone-it/server/clone-it-cli.mjs jobs [--limit N]
- *   node clone-it/server/clone-it-cli.mjs retry <id>
- *   node clone-it/server/clone-it-cli.mjs server [options]
+ *   node keepit/server/keepit-cli.mjs clone <url> [options]
+ *   node keepit/server/keepit-cli.mjs list [options]
+ *   node keepit/server/keepit-cli.mjs jobs [--limit N]
+ *   node keepit/server/keepit-cli.mjs retry <id>
+ *   node keepit/server/keepit-cli.mjs server [options]
  *
  * The `clone` subcommand runs synchronously in the foreground, prints
  * git progress live, and records the attempt into the shared jobs.json
@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import {
   parseConfig, VERSION, wsById, referencesRoot,
   listCategories, listCategoryRepos, parseRegistry,
-  CloneItCore, doClone, validateInputs,
+  KeepItCore, doClone, validateInputs,
   addCollected, listCollected, removeCollected, doCloneWebsite, isHttpUrl,
 } from './core.mjs';
 
@@ -98,7 +98,7 @@ async function cmdClone(pos, opts) {
   const category = opts.category || 'others';
   const ws = wsById(cfg.workspaces, opts.workspaceId || cfg.workspaces[0].id);
 
-  out(`CloneIt v${VERSION}`);
+  out(`KeepIt v${VERSION}`);
   out(`workspace: ${ws.id}  ${ws.dir}`);
   out(`category:   ${category}`);
   out(`url:        ${url}`);
@@ -106,7 +106,7 @@ async function cmdClone(pos, opts) {
   out('');
 
   // record the job up front so it lands in history even if it fails
-  const core = new CloneItCore(cfg);
+  const core = new KeepItCore(cfg);
   // enqueue gives us a job record + runs the queue; but for CLI we want
   // synchronous live output, so run doClone directly and write the record.
   const v = validateInputs(cfg, { workspace: ws.id, category, url, name: opts.name });
@@ -175,7 +175,7 @@ function cmdList(pos, opts) {
 // ---------- jobs ----------
 function cmdJobs(pos, opts) {
   const cfg = buildCfg(opts);
-  const core = new CloneItCore(cfg);
+  const core = new KeepItCore(cfg);
   const jobs = core.getJobs(opts.limit || 50);
   const ICON = { queued: '⏳', running: '🔄', retrying: '🔁', done: '✅', failed: '❌' };
   if (!jobs.length) { out('no clone history yet'); return; }
@@ -193,7 +193,7 @@ async function cmdRetry(pos, opts) {
   const id = pos[0];
   if (!id) { err('usage: retry <job-id>'); process.exit(2); }
   const cfg = buildCfg(opts);
-  const core = new CloneItCore(cfg);
+  const core = new KeepItCore(cfg);
   const r = core.retryJob(id);
   if (r.error) { err('error: ' + r.error); process.exit(1); }
   if (r.skipped) { out(`job ${id} already ${r.job.status}, not re-queued`); return; }
@@ -204,7 +204,7 @@ async function cmdRetry(pos, opts) {
 // ---------- server ----------
 async function cmdServer(pos, opts) {
   // re-exec the server module so it owns the event loop
-  const serverFile = new URL('./clone-it-server.mjs', import.meta.url).pathname;
+  const serverFile = new URL('./keepit-server.mjs', import.meta.url).pathname;
   const { spawn } = await import('node:child_process');
   const argv = [];
   if (opts.config) argv.push('--config', opts.config);
@@ -229,9 +229,9 @@ function cmdCollect(pos, opts) {
   if (!url) { err('usage: collect <url> [--title T] [--note N] [--source S]'); process.exit(2); }
   const cfg = buildCfg(opts);
   const r = addCollected(cfg, { category: 'collection', url, title: opts.title, note: opts.note, source: opts.source || 'cli' });
-  if (r.code === 409) { out('已收藏过: ' + url); return; }
+  if (r.code === 409) { out('已存入稍后读过: ' + url); return; }
   if (r.code !== 200) { err('error: ' + r.error); process.exit(r.code); }
-  out('已收藏 [collection]: ' + r.entry.url);
+  out('已存入稍后读 [collection]: ' + r.entry.url);
   out('  id:        ' + r.entry.id);
   if (r.entry.title) out('  title:     ' + r.entry.title);
   out('  crawl:     ' + r.entry.crawlStatus + ' (待后续处理)');
@@ -278,16 +278,16 @@ function cmdCloneWebsite(pos, opts) {
 const rest = args.slice(1);
 const { pos, opts } = parseArgs(rest);
 
-const HELP = `CloneIt v${VERSION} — clone GitHub repos into references/
+const HELP = `KeepIt v${VERSION} — clone GitHub repos into references/
 
 usage:
-  clone-it-cli.mjs clone <url> [--category X] [--name N] [--workspace-id ws0]
+  keepit-cli.mjs clone <url> [--category X] [--name N] [--workspace-id ws0]
                                  [--full] [--no-pull] [--retry N] [--mirror URL] [--proxy URL]
-  clone-it-cli.mjs list   [--category X] [--workspace-id ws0]
-  clone-it-cli.mjs jobs   [--limit N]
-  clone-it-cli.mjs retry  <job-id>
-  clone-it-cli.mjs server [--port N] [--token T] [--watch-clipboard] [--max-concurrent N] [--workspace D] ...
-  clone-it-cli.mjs help
+  keepit-cli.mjs list   [--category X] [--workspace-id ws0]
+  keepit-cli.mjs jobs   [--limit N]
+  keepit-cli.mjs retry  <job-id>
+  keepit-cli.mjs server [--port N] [--token T] [--watch-clipboard] [--max-concurrent N] [--workspace D] ...
+  keepit-cli.mjs help
 
 default workspace = current working directory (clone lands in ./references/<category>/<name>).
 history is recorded in server/jobs.json and shared with the HTTP server.

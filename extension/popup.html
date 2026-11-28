@@ -7,13 +7,13 @@
 <body>
 <header class="app">
   <div class="logo">C</div>
-  <h1>CloneIt</h1>
+  <h1>KeepIt</h1>
   <div class="ws-picker"><select id="ws" title="目标仓库"></select></div>
 </header>
 
 <nav class="tabs">
   <button class="tab on" data-tab="clone">Clone</button>
-  <button class="tab" data-tab="collect">收藏</button>
+  <button class="tab" data-tab="collect">稍后读</button>
   <button class="tab" data-tab="website">克隆网站</button>
   <button class="tab" data-tab="history">历史 / 进度</button>
 </nav>
@@ -44,7 +44,7 @@
     <div class="status" id="status"></div>
   </section>
 
-  <!-- ===== 收藏 tab (collected.json · category=collection) ===== -->
+  <!-- ===== 稍后读 tab (collected.json · category=collection) ===== -->
   <section class="tab-panel" id="panel-collect" style="display:none">
     <div class="card">
       <div class="repo-line">
@@ -58,7 +58,7 @@
     <label class="lbl">备注 (可选)</label>
     <input id="colNote" type="text" placeholder="一句话备注" />
     <div class="actions">
-      <button class="primary" id="colGo">收藏</button>
+      <button class="primary" id="colGo">稍后读</button>
       <button class="ghost" id="colReload">刷新列表</button>
     </div>
     <div class="status" id="colStatus"></div>

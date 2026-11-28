@@ -1,14 +1,17 @@
-// isolated test of the registry parser extracted from refdock-server.mjs
+// isolated test of the registry parser in server/core.mjs
+// usage: node tools/test-parser.mjs [path/to/registry_references.yaml]
 import fs from 'node:fs';
+import path from 'node:path';
+import { parseRegistry } from '../server/core.mjs';
 
-const src = fs.readFileSync('ref-dock/server/refdock-server.mjs', 'utf8');
-const start = src.indexOf('// ---------- registry yaml');
-const end = src.indexOf('// ---------- categories ----------');
-const code = src.slice(start, end);
+const file = process.argv[2] || path.join(process.cwd(), 'registry_references.yaml');
+if (!fs.existsSync(file)) {
+  console.error(`usage: node tools/test-parser.mjs <registry_references.yaml>\n  not found: ${file}`);
+  process.exit(2);
+}
 
-const text = fs.readFileSync('registry_references.yaml', 'utf8');
-const fn = new Function('text', code + '\nreturn parseRegistry(text);');
-const projects = fn(text);
+const text = fs.readFileSync(file, 'utf8');
+const projects = parseRegistry(text);
 console.log('parsed:', projects.length);
 console.log(JSON.stringify(projects.slice(0, 3), null, 1));
 console.log('categories:', [...new Set(projects.map((p) => p.category))].join(', '));

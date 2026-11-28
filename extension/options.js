@@ -1,4 +1,4 @@
-/* CloneIt options page. */
+/* KeepIt options page. */
 'use strict';
 const $ = (id) => document.getElementById(id);
 
@@ -26,7 +26,7 @@ $('save').onclick = async () => {
 
 $('test').onclick = async () => {
   const base = $('serverUrl').value.trim().replace(/\/+$/, '');
-  const headers = $('token').value.trim() ? { 'X-CloneIt-Token': $('token').value.trim() } : {};
+  const headers = $('token').value.trim() ? { 'X-KeepIt-Token': $('token').value.trim() } : {};
   try {
     const r = await fetch(base + '/api/ping', { headers });
     const body = await r.json();

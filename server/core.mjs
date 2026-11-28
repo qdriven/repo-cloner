@@ -1,12 +1,12 @@
-/* CloneIt core — shared logic for the server (HTTP) and CLI entry points.
+/* KeepIt core — shared logic for the server (HTTP) and CLI entry points.
  *
  * Zero-dependency Node ≥ 18. Holds: config parsing, git execution (with
  * progress parsing), clone/pull logic, async job queue with history
  * persistence, references tree / registry scanning, collected-link storage
- * (收藏: record article addresses locally, no crawling yet) and the
+ * (稍后读 read later: record article addresses locally, no crawling yet) and the
  * clone-website placeholder (处理逻辑留空, planned for later).
  *
- * Both clone-it-server.mjs and clone-it-cli.mjs import this and add
+ * Both keepit-server.mjs and keepit-cli.mjs import this and add
  * their own surface (HTTP routes / command-line).
  */
 'use strict';
@@ -21,14 +21,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const VERSION = '0.3.0';
 export const DEFAULT_PORT = 7420;
-export const DEFAULT_CONFIG_FILE = path.resolve(__dirname, '..', 'cloneit.config.json');
+export const DEFAULT_CONFIG_FILE = path.resolve(__dirname, '..', 'keepit.config.json');
 export const ORIGIN_ALLOW = new Set([
   'chrome-extension://',
   'moz-extension://',
 ]);
 
 // Request token header used when --token is set.
-export const TOKEN_HEADER = 'x-cloneit-token';
+export const TOKEN_HEADER = 'x-keepit-token';
 
 const BOOL_FLAGS = new Set(['--watch-clipboard', '--no-pull', '--full']);
 
@@ -80,7 +80,7 @@ export function loadConfigFile(configPath, required = false) {
   return { data: raw, loaded: configPath };
 }
 
-// ---------- config (precedence: CLI > env CLONEIT_* > cloneit.config.json > default) ----------
+// ---------- config (precedence: CLI > env KEEPIT_* > keepit.config.json > default) ----------
 export function parseConfig(argv = [], env = process.env) {
   const argVal = (name) => {
     const i = argv.lastIndexOf(name);
@@ -88,7 +88,7 @@ export function parseConfig(argv = [], env = process.env) {
   };
   const flags = new Set(argv.filter((a) => BOOL_FLAGS.has(a)));
 
-  const explicitCfg = pickStr(argVal('--config'), env.CLONEIT_CONFIG);
+  const explicitCfg = pickStr(argVal('--config'), env.KEEPIT_CONFIG);
   const cfgPath = explicitCfg ? path.resolve(expandHome(explicitCfg)) : DEFAULT_CONFIG_FILE;
   const { data: fileCfg, loaded: loadedConfigFile } = loadConfigFile(cfgPath, Boolean(explicitCfg));
   const cfgDir = path.dirname(cfgPath);
@@ -97,8 +97,8 @@ export function parseConfig(argv = [], env = process.env) {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--workspace' && argv[i + 1]) cliWs.push(path.resolve(expandHome(argv[++i])));
   }
-  const envWs = typeof env.CLONEIT_WORKSPACE === 'string' && env.CLONEIT_WORKSPACE.trim()
-    ? env.CLONEIT_WORKSPACE.split(path.delimiter).map((s) => s.trim()).filter(Boolean).map((d) => path.resolve(expandHome(d)))
+  const envWs = typeof env.KEEPIT_WORKSPACE === 'string' && env.KEEPIT_WORKSPACE.trim()
+    ? env.KEEPIT_WORKSPACE.split(path.delimiter).map((s) => s.trim()).filter(Boolean).map((d) => path.resolve(expandHome(d)))
     : [];
   const rawCfgWs = Array.isArray(fileCfg.workspaces) ? fileCfg.workspaces
     : Array.isArray(fileCfg.workspace) ? fileCfg.workspace
@@ -120,18 +120,18 @@ export function parseConfig(argv = [], env = process.env) {
     argv,
     loadedConfigFile,
     workspaceExplicit,
-    port: parseNum(argVal('--port')) ?? parseNum(env.CLONEIT_PORT) ?? parseNum(fileCfg.port) ?? DEFAULT_PORT,
-    token: pickStr(argVal('--token'), env.CLONEIT_TOKEN, fileCfg.token),
-    browser: pickStr(argVal('--browser'), env.CLONEIT_BROWSER, fileCfg.browser),
-    watchClipboard: flags.has('--watch-clipboard') ? true : (parseBool(env.CLONEIT_WATCH_CLIPBOARD) ?? parseBool(fileCfg.watchClipboard) ?? false),
-    noPull: flags.has('--no-pull') ? true : (parseBool(env.CLONEIT_NO_PULL) ?? parseBool(fileCfg.noPull) ?? false),
-    full: flags.has('--full') ? true : (parseBool(env.CLONEIT_FULL) ?? parseBool(fileCfg.full) ?? false),
-    cloneTimeout: parseNum(argVal('--clone-timeout')) ?? parseNum(env.CLONEIT_CLONE_TIMEOUT) ?? parseNum(fileCfg.cloneTimeout) ?? 0,
-    mirror: pickStr(argVal('--mirror'), env.CLONEIT_MIRROR, fileCfg.mirror),
-    proxy: pickStr(argVal('--proxy'), env.CLONEIT_PROXY, fileCfg.proxy),
-    retry: Math.max(1, parseNum(argVal('--retry')) ?? parseNum(env.CLONEIT_RETRY) ?? parseNum(fileCfg.retry) ?? 3),
+    port: parseNum(argVal('--port')) ?? parseNum(env.KEEPIT_PORT) ?? parseNum(fileCfg.port) ?? DEFAULT_PORT,
+    token: pickStr(argVal('--token'), env.KEEPIT_TOKEN, fileCfg.token),
+    browser: pickStr(argVal('--browser'), env.KEEPIT_BROWSER, fileCfg.browser),
+    watchClipboard: flags.has('--watch-clipboard') ? true : (parseBool(env.KEEPIT_WATCH_CLIPBOARD) ?? parseBool(fileCfg.watchClipboard) ?? false),
+    noPull: flags.has('--no-pull') ? true : (parseBool(env.KEEPIT_NO_PULL) ?? parseBool(fileCfg.noPull) ?? false),
+    full: flags.has('--full') ? true : (parseBool(env.KEEPIT_FULL) ?? parseBool(fileCfg.full) ?? false),
+    cloneTimeout: parseNum(argVal('--clone-timeout')) ?? parseNum(env.KEEPIT_CLONE_TIMEOUT) ?? parseNum(fileCfg.cloneTimeout) ?? 0,
+    mirror: pickStr(argVal('--mirror'), env.KEEPIT_MIRROR, fileCfg.mirror),
+    proxy: pickStr(argVal('--proxy'), env.KEEPIT_PROXY, fileCfg.proxy),
+    retry: Math.max(1, parseNum(argVal('--retry')) ?? parseNum(env.KEEPIT_RETRY) ?? parseNum(fileCfg.retry) ?? 3),
     // max concurrent clone jobs; default 5 (user requirement: at most 5 in parallel)
-    maxConcurrent: Math.max(1, parseNum(argVal('--max-concurrent')) ?? parseNum(env.CLONEIT_MAX_CONCURRENT) ?? parseNum(fileCfg.maxConcurrent) ?? 5),
+    maxConcurrent: Math.max(1, parseNum(argVal('--max-concurrent')) ?? parseNum(env.KEEPIT_MAX_CONCURRENT) ?? parseNum(fileCfg.maxConcurrent) ?? 5),
     workspaces: WORKSPACES,
     jobsFile: path.join(__dirname, 'jobs.json'),
   };
@@ -323,7 +323,7 @@ export function listCategoryRepos(ws, category) {
 // ---------- collected & clone-website store (server/collected.json) ----------
 //
 // 统一存储在 server/collected.json，用 category 区分：
-//   - "collection": 收藏文章/网页地址（爬取内容任务待后续实现）
+//   - "collection": 稍后读文章/网页地址（爬取内容任务待后续实现）
 //   - "clone":      待克隆网站记录（整站克隆任务待后续实现）
 export const COLLECT_CATEGORIES = new Set(['collection', 'clone']);
 
@@ -571,7 +571,7 @@ export async function doClone(cfg, { workspace, category, url, name }, onProgres
 }
 
 // ---------- job queue + history ----------
-export class CloneItCore {
+export class KeepItCore {
   constructor(cfg) {
     this.cfg = cfg;
     this.JOBS = [];
@@ -598,7 +598,7 @@ export class CloneItCore {
           if (n > maxSeq) maxSeq = n;
         }
       }
-      if (this.JOBS.length) console.log(`[cloneit] restored ${this.JOBS.length} job records from ${path.basename(file)}`);
+      if (this.JOBS.length) console.log(`[keepit] restored ${this.JOBS.length} job records from ${path.basename(file)}`);
       return maxSeq;
     } catch {
       return 0;
@@ -678,7 +678,7 @@ export class CloneItCore {
       }
       if (job.status !== 'done') job.status = 'failed';
       job.finishedAt = new Date().toISOString();
-      console.log(`[cloneit] job ${job.id} ${job.status}${job.error ? ' — ' + job.error : ''}`);
+      console.log(`[keepit] job ${job.id} ${job.status}${job.error ? ' — ' + job.error : ''}`);
     });
     this.pump();
     return job;
@@ -718,7 +718,7 @@ export async function watchClipboardLoop(cfg, doCloneFn) {
         text = r.stdout;
       }
     } catch { continue; }
-    const m = text.match(/CLONEIT:\/\/clone\?(\S+)/);
+    const m = text.match(/KEEPIT:\/\/clone\?(\S+)/);
     if (!m || text === last) continue;
     last = text;
     const params = new URLSearchParams(m[1]);
@@ -727,8 +727,8 @@ export async function watchClipboardLoop(cfg, doCloneFn) {
       category: params.get('category') || '',
       url: params.get('url') || '',
     };
-    console.log('[cloneit] clipboard sentinel →', req.url, '→', req.category);
+    console.log('[keepit] clipboard sentinel →', req.url, '→', req.category);
     const res = await doCloneFn(req);
-    console.log('[cloneit] clipboard result:', JSON.stringify(res.body));
+    console.log('[keepit] clipboard result:', JSON.stringify(res.body));
   }
 }
