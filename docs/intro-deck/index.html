@@ -376,11 +376,11 @@ body.capture-mode #deck-controls { display: none !important; }
     <!-- ==================== SLIDE 01: COVER ==================== -->
     <section class="slide active" data-id="01-cover" data-tag="01 / 08 · OVERVIEW">
       <div style="margin-top: 28px">
-        <div class="eyebrow">BROWSER TO LOCAL KNOWLEDGE BASE · 零依赖本地伴侣</div>
-        <h1 class="hero">把逛到的仓库、好文与网站<br/><span class="hl">一次点击，收进本地知识库</span></h1>
+        <div class="eyebrow">KEEPIT · 自己动手的信息收集系统 · ANY PLATFORM</div>
+        <h1 class="hero">小红书、B 站、GitHub、公众号…<br/><span class="hl">一键留下 → AI 提要点 → 随时复盘</span></h1>
         <p class="lead" style="margin-top: 26px">
-          从浏览器页面一键直达本地知识库 ——
-          默认浅克隆、5 路并发队列、自动识别当前网址，让外部参考资料立即可被本地 AI Agent 检索与复用。
+          收藏不再看过就忘：任何平台的好内容一键留进本地知识库，
+          AI 提炼成要点并注明出处，怀疑可核对，随时可复盘。
         </p>
       </div>
 
@@ -390,8 +390,8 @@ body.capture-mode #deck-controls { display: none !important; }
           <p>自动解析当前 GitHub 仓库页，点选分类即入队浅克隆，最多 5 并发 + 失败退避重试。</p>
         </div>
         <div class="panel">
-          <h3><span class="badge sky">02</span> 稍后读</h3>
-          <p>任意文章页 / X 推文自动带入标题与 URL，一键存入本地稍后读清单，自动去重。</p>
+          <h3><span class="badge sky">02</span> 稍后读 · 任何平台</h3>
+          <p>小红书笔记、B 站视频、公众号文章一键存入本地稍后读清单，自动去重。</p>
         </div>
         <div class="panel">
           <h3><span class="badge warn">03</span> 克隆网站</h3>
@@ -404,8 +404,8 @@ body.capture-mode #deck-controls { display: none !important; }
     <section class="slide" data-id="02-why" data-tag="02 / 08 · WHY WE BUILT IT">
       <div>
         <div class="eyebrow">WHY · 为什么要做这个项目</div>
-        <h2 class="stitle">日常收集外部参考资料，原本被割裂成三条高摩擦链路</h2>
-        <p class="lead">每次从浏览器切去终端或顺手塞进书签栏，要么打断阅读心流，要么让资料永远停留在浏览器里吃灰。</p>
+        <h2 class="stitle">收藏过 ≠ 记住了 —— 看过就忘，是因为内容从未变成要点</h2>
+        <p class="lead">真正的问题不是收集麻烦，而是收集完就没有然后：没有要点、没有出处、无法复盘。</p>
       </div>
 
       <div class="row-3" style="flex:1; max-height: 500px; margin-top: 16px">
@@ -425,27 +425,27 @@ body.capture-mode #deck-controls { display: none !important; }
 
         <div class="panel">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-            <span class="badge warn">痛点 02 · 好文与推文</span>
+            <span class="badge warn">痛点 02 · 看过就忘</span>
             <span class="mono" style="color:var(--amber);font-size:20px;font-weight:700">书签即吃灰</span>
           </div>
-          <h3>散落浏览器，Agent 不可见</h3>
+          <h3>收藏几百条，从不回看</h3>
           <ul>
-            <li>刷到高质量技术推文或博客，收藏进浏览器书签</li>
-            <li>本地 Cursor / Claude Agent 无法读取书签上下文</li>
-            <li>缺少备注、来源时间戳与待抓取状态追踪</li>
+            <li>好文章、好推文丢进书签后，再也没打开过</li>
+            <li>内容没有提炼成要点，读过就忘</li>
+            <li>想复盘时，找不到当初为什么收藏、出处在哪</li>
           </ul>
         </div>
 
         <div class="panel">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-            <span class="badge sky">痛点 03 · 在线工具站</span>
-            <span class="mono" style="color:var(--sky);font-size:20px;font-weight:700">缺少收口</span>
+            <span class="badge sky">痛点 03 · 网站与长视频</span>
+            <span class="mono" style="color:var(--sky);font-size:20px;font-weight:700">留不下的留不下</span>
           </div>
-          <h3>想整站参考，无处登记</h3>
+          <h3>想留的留不下，想提炼的没提炼</h3>
           <ul>
-            <li>看到交互惊艳的在线工具站或文档站想离线复刻</li>
-            <li>和普通文章混在一起，分不清「读内容」还是「扒整站」</li>
-            <li>缺少统一的本地站点收藏登记</li>
+            <li>想留住设计的整站、想提炼要点的长视频，只能先收藏</li>
+            <li>收藏之后没有后续：不下、不提炼、不核对</li>
+            <li>缺少统一的登记与出处管理</li>
           </ul>
         </div>
       </div>
@@ -455,7 +455,7 @@ body.capture-mode #deck-controls { display: none !important; }
     <section class="slide" data-id="03-architecture" data-tag="03 / 08 · ARCHITECTURE">
       <div>
         <div class="eyebrow">HOW IT WORKS · 解决了什么问题</div>
-        <h2 class="stitle">前端极简投递 + 单核本地守护服务 + 双通道结构化落盘</h2>
+        <h2 class="stitle">三步闭环：一键留下 → 本地沉淀（保留出处）→ AI 提炼要点</h2>
       </div>
 
       <div class="arch-flow">
@@ -623,7 +623,7 @@ body.capture-mode #deck-controls { display: none !important; }
         <div class="browser-stage" id="demo3Stage" style="height: 690px">
           <div class="b-chrome">
             <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
-            <div class="b-url" id="d3-browser-url">🔒 https://x.com/lijigang</div>
+            <div class="b-url" id="d3-browser-url">🔒 https://www.bilibili.com/video/BV1bP41197ue</div>
             <div class="b-ext-btn">C</div>
           </div>
           <div class="b-page" id="d3-browser-page" style="padding:28px 34px"></div>
@@ -656,7 +656,7 @@ body.capture-mode #deck-controls { display: none !important; }
         <div style="display:flex; flex-direction:column; gap:18px; height: 690px">
           <div>
             <div class="eyebrow">PRODUCT DEMO 03 · 自动识别当前网址</div>
-            <h2 class="stitle" style="font-size:38px;margin-bottom:6px">同库分流写入 collected.json</h2>
+            <h2 class="stitle" style="font-size:38px;margin-bottom:6px">任何平台，一键留下</h2>
             <p style="font-size:19px;color:var(--ink-2)">自动读取当前页标题与网址，用 <span class="code-pill">category</span> 区分「稍后读文章」与「克隆网站」。</p>
           </div>
           <div class="term-win" style="flex:1; height:auto">
@@ -674,7 +674,7 @@ body.capture-mode #deck-controls { display: none !important; }
     <section class="slide" data-id="07-impact" data-tag="07 / 08 · IMPACT & SIMPLIFICATION">
       <div>
         <div class="eyebrow">RESULTS · 效果如何 · 减少了什么内容</div>
-        <h2 class="stitle">给操作流程与工程复杂度同时做减法，已在真实收集中高频验证</h2>
+        <h2 class="stitle">留下 → 要点 + 出处 → 核对 → 复盘，已在真实收集中高频验证</h2>
       </div>
 
       <div class="kpi-grid">
@@ -995,10 +995,10 @@ body.capture-mode #deck-controls { display: none !important; }
     const bUrl = document.getElementById('d3-browser-url');
     const bPage = document.getElementById('d3-browser-page');
     if (!onWebTab) {
-      bUrl.textContent = '🔒 https://x.com/lijigang';
+      bUrl.textContent = '🔒 https://www.bilibili.com/video/BV1bP41197ue';
       bPage.innerHTML = `
-        <div class="gh-header">𝕏 李继刚 (@lijigang)</div>
-        <div class="gh-desc" style="max-width:430px">Prompt & Agent Skill 创作者 · Unix 气质的思考与表达工具集（ljg-skills）。</div>
+        <div class="gh-header">▶ Prompt 与 Skill 设计实战（B 站 · 45 分钟）</div>
+        <div class="gh-desc" style="max-width:430px">长视频刷不完也没关系：先留坐标，之后 AI 帮你记录并抽取关键信息。</div>
         <div class="gh-files" style="width:420px;margin-top:20px">
           <div class="gh-row"><span>📌 Pinned Thread</span><span>ljg-present v4.8</span></div>
           <div class="gh-row"><span>📝 Article</span><span>如何把知识讲到能迁移</span></div>
@@ -1020,18 +1020,18 @@ body.capture-mode #deck-controls { display: none !important; }
     if (!onWebTab) {
       pBody.innerHTML = `
         <div class="ci-card">
-          <div class="ci-card-title"><span>李继刚 (@lijigang) / X</span><span class="ci-pill">collection</span></div>
-          <div class="ci-card-sub">https://x.com/lijigang</div>
+          <div class="ci-card-title"><span>Prompt 与 Skill 设计实战（B 站 · 45 分钟）</span><span class="ci-pill">collection</span></div>
+          <div class="ci-card-sub">https://www.bilibili.com/video/BV1bP41197ue</div>
         </div>
         <span class="ci-lbl">标题 (可选，默认用网页标题)</span>
-        <div class="ci-input placeholder">李继刚 (@lijigang) / X</div>
+        <div class="ci-input placeholder">Prompt 与 Skill 设计实战（B 站 · 45 分钟）</div>
         <span class="ci-lbl">备注 (可选)</span>
         <div class="ci-input">Prompt 与 Skill 设计参考</div>
         <div class="ci-actions">
           <div class="ci-btn">稍后读</div>
           <div class="ci-btn-ghost">刷新列表</div>
         </div>
-        ${savedCol ? `<div class="ci-status">✅ 已记录 [collection] → https://x.com/lijigang</div>` : ''}
+        ${savedCol ? `<div class="ci-status">✅ 已记录 [collection] → https://www.bilibili.com/video/BV1bP41197ue</div>` : ''}
       `;
     } else {
       pBody.innerHTML = `
@@ -1073,8 +1073,8 @@ body.capture-mode #deck-controls { display: none !important; }
       jsonText += `  <span class="t-ok">{
     "id": "col-mwyqxq3e-29",
     "category": "collection",
-    "url": "https://x.com/lijigang",
-    "title": "李继刚 (@lijigang) / X",
+    "url": "https://www.bilibili.com/video/BV1bP41197ue",
+    "title": "Prompt 与 Skill 设计实战（B 站 · 45 分钟）",
     "note": "Prompt 与 Skill 设计参考",
     "crawlStatus": "pending"
   }</span>,\n`;
@@ -1082,7 +1082,7 @@ body.capture-mode #deck-controls { display: none !important; }
     jsonText += `  <span class="t-dim">{
     "id": "col-mwyonvfm-1",
     "category": "collection",
-    "url": "https://x.com/Tobiasbuildss",
+    "url": "https://xiaohongshu.com/explore/65f2a1c4",
     "crawlStatus": "pending"
   }</span>\n]`;
     document.getElementById('d3-json').innerHTML = jsonText;
